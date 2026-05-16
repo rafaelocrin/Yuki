@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="..\build\BloggingSystem.Api.props" />
-</Project>
