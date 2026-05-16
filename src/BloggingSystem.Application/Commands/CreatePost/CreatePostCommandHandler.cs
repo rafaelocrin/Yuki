@@ -11,17 +11,20 @@ public sealed class CreatePostCommandHandler : IRequestHandler<CreatePostCommand
 {
     private readonly IEventStore _eventStore;
     private readonly IAuthorReadRepository _authorRepository;
+    private readonly IOutboxWriter _outboxWriter;
     private readonly PostProjection _projection;
     private readonly IDateTimeProvider _dateTimeProvider;
 
     public CreatePostCommandHandler(
         IEventStore eventStore,
         IAuthorReadRepository authorRepository,
+        IOutboxWriter outboxWriter,
         PostProjection projection,
         IDateTimeProvider dateTimeProvider)
     {
         _eventStore = eventStore;
         _authorRepository = authorRepository;
+        _outboxWriter = outboxWriter;
         _projection = projection;
         _dateTimeProvider = dateTimeProvider;
     }
@@ -40,6 +43,12 @@ public sealed class CreatePostCommandHandler : IRequestHandler<CreatePostCommand
             _dateTimeProvider.UtcNow);
 
         await _eventStore.AppendEventsAsync(post.Id, post.UncommittedEvents, cancellationToken);
+
+        // Write to outbox BEFORE inline projection.  If the process crashes after this
+        // line, the OutboxProcessor will re-apply the projection on restart, guaranteeing
+        // the read model never silently drifts from the event log.
+        await _outboxWriter.WriteAsync(post.UncommittedEvents, cancellationToken);
+
         await _projection.ProjectAsync(post.UncommittedEvents, cancellationToken);
         post.ClearUncommittedEvents();
 

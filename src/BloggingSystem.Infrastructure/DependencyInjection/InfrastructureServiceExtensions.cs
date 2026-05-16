@@ -1,5 +1,6 @@
 using BloggingSystem.Application.Ports;
 using BloggingSystem.Domain.Events;
+using BloggingSystem.Infrastructure.Outbox;
 using BloggingSystem.Infrastructure.Persistence.EventStore;
 using BloggingSystem.Infrastructure.Persistence.ReadModel;
 using BloggingSystem.Infrastructure.Persistence.Seeding;
@@ -34,6 +35,9 @@ public static class InfrastructureServiceExtensions
             services.AddSingleton<IMessageSerializer, JsonMessageSerializer>();
 
         services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
+
+        services.AddScoped<IOutboxWriter, EfCoreOutboxWriter>();
+        services.AddHostedService<OutboxProcessor>();
 
         services.AddHostedService<DataSeeder>();
 

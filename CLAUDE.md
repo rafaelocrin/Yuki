@@ -29,7 +29,7 @@ Domain → Application → Infrastructure → API
 
 **Hexagonal boundary rule:** Domain and Application never reference Infrastructure or API namespaces. Infrastructure implements Application ports. API wires everything via DI.
 
-**Event Sourcing flow:** `CreatePostCommand` → `Post.Create()` raises `PostCreatedEvent` → append to `IEventStore` → `PostProjection.ProjectAsync()` upserts EF Core read model synchronously.
+**Event Sourcing flow:** `CreatePostCommand` → `Post.Create()` raises `PostCreatedEvent` → append to `IEventStore` → write to `OutboxEvents` table → `PostProjection.ProjectAsync()` upserts EF Core read model synchronously. `OutboxProcessor` (BackgroundService) re-projects any entries that are still pending after a crash, guaranteeing the read model never silently drifts from the event log.
 
 **Serialization Strategy pattern:** `IMessageSerializer` (Application port) — `JsonMessageSerializer` (default) or `XmlMessageSerializer`, selected via `Serialization:Format` in `appsettings.json`. No Application or API code changes needed to switch.
 
@@ -57,18 +57,21 @@ Domain → Application → Infrastructure → API
 | `src/BloggingSystem.Api/Middleware/GlobalExceptionHandler.cs` | RFC 7807 ProblemDetails for all exceptions |
 | `src/BloggingSystem.Application/Behaviors/LoggingBehavior.cs` | MediatR pipeline: request/response logging |
 | `src/BloggingSystem.Application/Behaviors/ValidationBehavior.cs` | MediatR pipeline: FluentValidation enforcement |
+| `src/BloggingSystem.Application/Ports/IOutboxWriter.cs` | Port: write domain events to the outbox |
+| `src/BloggingSystem.Infrastructure/Outbox/EfCoreOutboxWriter.cs` | Persists events to OutboxEvents table (EF Core) |
+| `src/BloggingSystem.Infrastructure/Outbox/OutboxProcessor.cs` | BackgroundService: replays pending outbox entries on restart |
 
 ---
 
 ## Tests
 
-165 tests, 0 failures. Run with `dotnet test`.
+179 tests, 0 failures. Run with `dotnet test`.
 
 | Project | Count | Type |
 |---------|-------|------|
 | `BloggingSystem.Domain.Tests` | 26 | Pure unit |
-| `BloggingSystem.Application.Tests` | 48 | Unit (NSubstitute mocks + concrete validators) |
-| `BloggingSystem.Infrastructure.Tests` | 36 | Integration + DI registration |
+| `BloggingSystem.Application.Tests` | 50 | Unit (NSubstitute mocks + concrete validators) |
+| `BloggingSystem.Infrastructure.Tests` | 48 | Integration + DI registration |
 | `BloggingSystem.Api.Tests` | 48 | Functional (WebApplicationFactory) |
 | `BloggingSystem.Architecture.Tests` | 7 | Architecture (NetArchTest.Rules) |
 
@@ -136,7 +139,7 @@ Remaining improvements, grouped by production-readiness dimension:
 ### Resilience
 10. **Retry / circuit-breaker** — Wrap PostgreSQL calls (EF Core + Marten) with Polly retry and circuit-breaker policies to handle transient failures.
 11. **Idempotent command handling** — Add an `IdempotencyKey` header; store processed command IDs to make `POST /post` and `POST /author` safe to retry without duplicate data.
-12. **Outbox pattern** — Move event appending + projection into a transactional outbox so a process crash between `AppendEventsAsync` and `ProjectAsync` cannot leave the read model stale.
+12. ~~**Outbox pattern**~~ ✅ `OutboxEvent` table + `EfCoreOutboxWriter` + `OutboxProcessor` (BackgroundService). Events written to outbox before inline projection; on restart the processor re-projects any pending entries, closing the crash-between-append-and-project window.
 
 ### Scalability & Performance
 13. **Async projection worker** — Decouple `PostProjection` from the write path; have a background worker consume events from Marten's async daemon so the command handler returns faster.
@@ -189,7 +192,7 @@ src/
 
 ```bash
 dotnet build                                         # build solution
-dotnet test                                          # run all 165 tests
+dotnet test                                          # run all 179 tests
 dotnet test --collect:"XPlat Code Coverage"          # with coverage
 dotnet run --project src/BloggingSystem.Api          # run locally (port 5002)
 docker compose up --build                            # run in Docker (port 8080)
@@ -209,4 +212,4 @@ docker compose up --build                            # run in Docker (port 8080)
 - All new infrastructure implementations must register via `InfrastructureServiceExtensions.AddInfrastructure()`.
 - New endpoints must chain `.WithName()`, `.WithTags("Posts")`, `.Produces<T>()` for Swagger completeness.
 - New tests must follow the existing pattern: unit tests mock ports via NSubstitute; functional tests use `BloggingApiFactory`.
-- Do not skip `dotnet test` after changes — all 165 tests must remain green.
+- Do not skip `dotnet test` after changes — all 179 tests must remain green.

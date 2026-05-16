@@ -13,6 +13,7 @@ public sealed class CreatePostCommandHandlerTests
 {
     private readonly IEventStore _eventStore;
     private readonly IAuthorReadRepository _authorRepo;
+    private readonly IOutboxWriter _outboxWriter;
     private readonly IPostReadRepository _postRepo;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly PostProjection _projection;
@@ -22,11 +23,12 @@ public sealed class CreatePostCommandHandlerTests
     {
         _eventStore = Substitute.For<IEventStore>();
         _authorRepo = Substitute.For<IAuthorReadRepository>();
+        _outboxWriter = Substitute.For<IOutboxWriter>();
         _postRepo = Substitute.For<IPostReadRepository>();
         _dateTimeProvider = Substitute.For<IDateTimeProvider>();
         _dateTimeProvider.UtcNow.Returns(DateTime.UtcNow);
         _projection = new PostProjection(_postRepo);
-        _handler = new CreatePostCommandHandler(_eventStore, _authorRepo, _projection, _dateTimeProvider);
+        _handler = new CreatePostCommandHandler(_eventStore, _authorRepo, _outboxWriter, _projection, _dateTimeProvider);
     }
 
     [Fact]
@@ -116,5 +118,34 @@ public sealed class CreatePostCommandHandlerTests
 
         await _eventStore.DidNotReceive().AppendEventsAsync(
             Arg.Any<Guid>(), Arg.Any<IEnumerable<IDomainEvent>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_WhenAuthorExists_WritesEventsToOutbox()
+    {
+        var authorId = Guid.NewGuid();
+        _authorRepo.GetByIdAsync(authorId, Arg.Any<CancellationToken>())
+            .Returns(new AuthorReadModel { Id = authorId, Name = "Jane", Surname = "Doe" });
+
+        var command = new CreatePostCommand(authorId, "Title", "Desc", "Content");
+        await _handler.Handle(command, CancellationToken.None);
+
+        await _outboxWriter.Received(1).WriteAsync(
+            Arg.Any<IEnumerable<IDomainEvent>>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_WhenAuthorNotFound_DoesNotWriteToOutbox()
+    {
+        var authorId = Guid.NewGuid();
+        _authorRepo.GetByIdAsync(authorId, Arg.Any<CancellationToken>())
+            .Returns((AuthorReadModel?)null);
+
+        var command = new CreatePostCommand(authorId, "Title", "Desc", "Content");
+        try { await _handler.Handle(command, CancellationToken.None); } catch { }
+
+        await _outboxWriter.DidNotReceive().WriteAsync(
+            Arg.Any<IEnumerable<IDomainEvent>>(), Arg.Any<CancellationToken>());
     }
 }

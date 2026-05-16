@@ -1,5 +1,6 @@
 using BloggingSystem.Application.Ports;
 using BloggingSystem.Infrastructure.DependencyInjection;
+using BloggingSystem.Infrastructure.Outbox;
 using BloggingSystem.Infrastructure.Persistence.EventStore;
 using BloggingSystem.Infrastructure.Persistence.ReadModel;
 using BloggingSystem.Infrastructure.Serialization;
@@ -173,5 +174,31 @@ public sealed class InfrastructureRegistrationTests
 
         act.Should().Throw<InvalidOperationException>()
             .WithMessage("*PostgreSQL*");
+    }
+
+    // ── Outbox registration ────────────────────────────────────────────────
+
+    [Fact]
+    public void AddInfrastructure_RegistersOutboxWriter()
+    {
+        var config = BuildConfig();
+        var services = new ServiceCollection().AddLogging();
+        services.AddInfrastructure(config, $"test-{Guid.NewGuid()}");
+
+        services.Should().Contain(d =>
+            d.ServiceType == typeof(IOutboxWriter) &&
+            d.ImplementationType == typeof(EfCoreOutboxWriter));
+    }
+
+    [Fact]
+    public void AddInfrastructure_RegistersOutboxProcessor()
+    {
+        var config = BuildConfig();
+        var services = new ServiceCollection().AddLogging();
+        services.AddInfrastructure(config, $"test-{Guid.NewGuid()}");
+
+        services.Should().Contain(d =>
+            d.ServiceType == typeof(IHostedService) &&
+            d.ImplementationType == typeof(OutboxProcessor));
     }
 }
