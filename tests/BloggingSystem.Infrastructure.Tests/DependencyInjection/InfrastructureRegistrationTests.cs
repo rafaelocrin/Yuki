@@ -1,10 +1,12 @@
 using BloggingSystem.Application.Ports;
 using BloggingSystem.Infrastructure.DependencyInjection;
 using BloggingSystem.Infrastructure.Persistence.EventStore;
+using BloggingSystem.Infrastructure.Persistence.ReadModel;
 using BloggingSystem.Infrastructure.Serialization;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace BloggingSystem.Infrastructure.Tests.DependencyInjection;
 
@@ -112,6 +114,59 @@ public sealed class InfrastructureRegistrationTests
     public void AddInfrastructure_WithMartenProvider_MissingConnectionString_Throws()
     {
         var config = BuildConfig(("EventStore:Provider", "marten")); // no connection string
+
+        var services = new ServiceCollection().AddLogging();
+        var act = () => services.AddInfrastructure(config, $"test-{Guid.NewGuid()}");
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("*PostgreSQL*");
+    }
+
+    // ── Read model switch ──────────────────────────────────────────────────
+
+    [Fact]
+    public void AddInfrastructure_WithNoReadModelKey_DefaultsToInMemory()
+    {
+        var config = BuildConfig();
+        var services = new ServiceCollection().AddLogging();
+        services.AddInfrastructure(config, $"test-{Guid.NewGuid()}");
+
+        services.Should().NotContain(d =>
+            d.ServiceType == typeof(IHostedService) &&
+            d.ImplementationType == typeof(DatabaseMigrator));
+    }
+
+    [Fact]
+    public void AddInfrastructure_WithInMemoryReadModel_DoesNotRegisterDatabaseMigrator()
+    {
+        var config = BuildConfig(("ReadModel:Provider", "inmemory"));
+        var services = new ServiceCollection().AddLogging();
+        services.AddInfrastructure(config, $"test-{Guid.NewGuid()}");
+
+        services.Should().NotContain(d =>
+            d.ServiceType == typeof(IHostedService) &&
+            d.ImplementationType == typeof(DatabaseMigrator));
+    }
+
+    [Fact]
+    public void AddInfrastructure_WithPostgresqlReadModel_RegistersDatabaseMigrator()
+    {
+        var config = BuildConfig(
+            ("ReadModel:Provider", "postgresql"),
+            ("ConnectionStrings:PostgreSQL", "Host=localhost;Database=blogging;Username=postgres;Password=postgres"));
+
+        var services = new ServiceCollection().AddLogging();
+        services.AddInfrastructure(config, $"test-{Guid.NewGuid()}");
+
+        services.Should().Contain(d =>
+            d.ServiceType == typeof(IHostedService) &&
+            d.ImplementationType == typeof(DatabaseMigrator));
+    }
+
+    [Fact]
+    public void AddInfrastructure_WithPostgresqlReadModel_MissingConnectionString_Throws()
+    {
+        var config = BuildConfig(("ReadModel:Provider", "postgresql")); // no connection string
 
         var services = new ServiceCollection().AddLogging();
         var act = () => services.AddInfrastructure(config, $"test-{Guid.NewGuid()}");

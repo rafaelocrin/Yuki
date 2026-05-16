@@ -183,14 +183,16 @@ All switches live in `appsettings.json` (or environment-specific overrides):
 |-----|-------------|---------|-------|
 | `Serialization:Format` | `json`, `xml` | `json` | Switches between `JsonMessageSerializer` and `XmlMessageSerializer`. |
 | `EventStore:Provider` | `inmemory`, `marten` | `inmemory` | Switches between `InMemoryEventStore` and `MartenEventStore` (PostgreSQL). |
-| `ConnectionStrings:PostgreSQL` | Npgsql connection string | *(none)* | **Required** when `EventStore:Provider` is `marten`. |
+| `ReadModel:Provider` | `inmemory`, `postgresql` | `inmemory` | Switches between EF Core InMemory and Npgsql (PostgreSQL). Migrations run automatically on startup. |
+| `ConnectionStrings:PostgreSQL` | Npgsql connection string | *(none)* | **Required** when `EventStore:Provider` is `marten` **or** `ReadModel:Provider` is `postgresql`. |
 
-**Example — switch to XML serialization + PostgreSQL event store:**
+**Example — full PostgreSQL stack:**
 
 ```json
 {
-  "Serialization": { "Format": "xml" },
+  "Serialization": { "Format": "json" },
   "EventStore": { "Provider": "marten" },
+  "ReadModel": { "Provider": "postgresql" },
   "ConnectionStrings": {
     "PostgreSQL": "Host=localhost;Port=5432;Database=blogging;Username=postgres;Password=postgres"
   }

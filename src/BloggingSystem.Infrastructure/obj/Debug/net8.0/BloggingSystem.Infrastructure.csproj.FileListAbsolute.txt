@@ -16,3 +16,5 @@ C:\Projects\Yuki\src\BloggingSystem.Infrastructure\obj\Debug\net8.0\refint\Blogg
 C:\Projects\Yuki\src\BloggingSystem.Infrastructure\obj\Debug\net8.0\BloggingSystem.Infrastructure.pdb
 C:\Projects\Yuki\src\BloggingSystem.Infrastructure\obj\Debug\net8.0\ref\BloggingSystem.Infrastructure.dll
 c:\Projects\Yuki\src\BloggingSystem.Infrastructure\obj\Debug\net8.0\BloggingSystem.Infrastructure.sourcelink.json
+C:\Projects\Yuki\src\BloggingSystem.Infrastructure\bin\Debug\net8.0\BloggingSystem.Infrastructure.runtimeconfig.json
+C:\Projects\Yuki\src\BloggingSystem.Infrastructure\obj\Debug\net8.0\BloggingSystem.Infrastructure.genruntimeconfig.cache

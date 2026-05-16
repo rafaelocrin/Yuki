@@ -200,3 +200,9 @@ c:\Projects\Yuki\src\BloggingSystem.Api\bin\Debug\net8.0\ru\Microsoft.CodeAnalys
 c:\Projects\Yuki\src\BloggingSystem.Api\bin\Debug\net8.0\tr\Microsoft.CodeAnalysis.Workspaces.resources.dll
 c:\Projects\Yuki\src\BloggingSystem.Api\bin\Debug\net8.0\zh-Hans\Microsoft.CodeAnalysis.Workspaces.resources.dll
 c:\Projects\Yuki\src\BloggingSystem.Api\bin\Debug\net8.0\zh-Hant\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\Projects\Yuki\src\BloggingSystem.Api\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.Relational.dll
+C:\Projects\Yuki\src\BloggingSystem.Api\bin\Debug\net8.0\Npgsql.EntityFrameworkCore.PostgreSQL.dll
+C:\Projects\Yuki\src\BloggingSystem.Api\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.Design.dll
+C:\Projects\Yuki\src\BloggingSystem.Api\bin\Debug\net8.0\Microsoft.Extensions.DependencyModel.dll
+C:\Projects\Yuki\src\BloggingSystem.Api\bin\Debug\net8.0\Mono.TextTemplating.dll
+C:\Projects\Yuki\src\BloggingSystem.Api\bin\Debug\net8.0\System.CodeDom.dll

@@ -1196,6 +1196,21 @@
           "lib/net8.0/Microsoft.EntityFrameworkCore.InMemory.dll": {}
         }
       },
+      "Microsoft.EntityFrameworkCore.Relational/8.0.15": {
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "8.0.15",
+          "Microsoft.Extensions.Configuration.Abstractions": "8.0.0"
+        },
+        "runtime": {
+          "lib/net8.0/Microsoft.EntityFrameworkCore.Relational.dll": {
+            "assemblyVersion": "8.0.15.0",
+            "fileVersion": "8.0.1525.16502"
+          }
+        },
+        "compile": {
+          "lib/net8.0/Microsoft.EntityFrameworkCore.Relational.dll": {}
+        }
+      },
       "Microsoft.Extensions.ApiDescription.Server/6.0.5": {},
       "Microsoft.Extensions.Caching.Abstractions/8.0.0": {
         "dependencies": {
@@ -1918,6 +1933,23 @@
         },
         "compile": {
           "lib/net8.0/Npgsql.dll": {}
+        }
+      },
+      "Npgsql.EntityFrameworkCore.PostgreSQL/8.0.11": {
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "8.0.15",
+          "Microsoft.EntityFrameworkCore.Abstractions": "8.0.15",
+          "Microsoft.EntityFrameworkCore.Relational": "8.0.15",
+          "Npgsql": "8.0.6"
+        },
+        "runtime": {
+          "lib/net8.0/Npgsql.EntityFrameworkCore.PostgreSQL.dll": {
+            "assemblyVersion": "8.0.11.0",
+            "fileVersion": "8.0.11.0"
+          }
+        },
+        "compile": {
+          "lib/net8.0/Npgsql.EntityFrameworkCore.PostgreSQL.dll": {}
         }
       },
       "Npgsql.Json.NET/8.0.0": {
@@ -2920,7 +2952,9 @@
           "BloggingSystem.Application": "1.0.0",
           "Marten": "7.40.5",
           "Microsoft.EntityFrameworkCore.InMemory": "8.0.15",
-          "Microsoft.Extensions.Hosting.Abstractions": "8.0.1"
+          "Microsoft.EntityFrameworkCore.Relational": "8.0.15",
+          "Microsoft.Extensions.Hosting.Abstractions": "8.0.1",
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "8.0.11"
         },
         "runtime": {
           "BloggingSystem.Infrastructure.dll": {
@@ -4984,6 +5018,13 @@
       "path": "microsoft.entityframeworkcore.inmemory/8.0.15",
       "hashPath": "microsoft.entityframeworkcore.inmemory.8.0.15.nupkg.sha512"
     },
+    "Microsoft.EntityFrameworkCore.Relational/8.0.15": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-rOge9UqPepLr4fDSbAjH+gMl4TwK7byKgUy66vgsjlwl11n/+MjbYZAYqfrD8mpGDwJ6Nzv2LIIK2fBHDqA+CQ==",
+      "path": "microsoft.entityframeworkcore.relational/8.0.15",
+      "hashPath": "microsoft.entityframeworkcore.relational.8.0.15.nupkg.sha512"
+    },
     "Microsoft.Extensions.ApiDescription.Server/6.0.5": {
       "type": "package",
       "serviceable": true,
@@ -5284,6 +5325,13 @@
       "sha512": "sha512-KaS6CY5kY2Sd0P00MSeFcOI3t2DiQ4UWG8AuRpVOUeDWITOKfoEEG91DP3cmT6aerixPkjwKgXxnpDxIkDpO6g==",
       "path": "npgsql/8.0.6",
       "hashPath": "npgsql.8.0.6.nupkg.sha512"
+    },
+    "Npgsql.EntityFrameworkCore.PostgreSQL/8.0.11": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-leShR/O/nSIS3Jpj8yUBmkzaXzBbtlV326+MYkX2BwAj2qSNrUv/H6m8G9Hnv2zUkQYccTpmV5jIVq5vdciEUA==",
+      "path": "npgsql.entityframeworkcore.postgresql/8.0.11",
+      "hashPath": "npgsql.entityframeworkcore.postgresql.8.0.11.nupkg.sha512"
     },
     "Npgsql.Json.NET/8.0.0": {
       "type": "package",

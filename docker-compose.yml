@@ -25,6 +25,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8080
       - EventStore__Provider=marten
+      - ReadModel__Provider=postgresql
       - ConnectionStrings__PostgreSQL=Host=postgres;Port=5432;Database=blogging;Username=postgres;Password=postgres
     depends_on:
       postgres:

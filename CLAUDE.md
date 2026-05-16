@@ -82,13 +82,15 @@ All switches live in `appsettings.json` (or environment-specific overrides like 
 |-----|-------------|---------|-------|
 | `Serialization:Format` | `json`, `xml` | `json` | Switches `IMessageSerializer` — `JsonMessageSerializer` or `XmlMessageSerializer`. No Application/API code changes needed. |
 | `EventStore:Provider` | `inmemory`, `marten` | `inmemory` | Switches `IEventStore` — `InMemoryEventStore` (no deps) or `MartenEventStore` (PostgreSQL via Marten 7.x). No Application/Domain code changes needed. |
-| `ConnectionStrings:PostgreSQL` | Npgsql connection string | *(none)* | **Required** when `EventStore:Provider` is `marten`. Throws `InvalidOperationException` at startup if absent. |
+| `ReadModel:Provider` | `inmemory`, `postgresql` | `inmemory` | Switches `BloggingDbContext` — EF Core InMemory (no deps) or Npgsql (PostgreSQL). Migrations applied automatically on startup via `DatabaseMigrator`. |
+| `ConnectionStrings:PostgreSQL` | Npgsql connection string | *(none)* | **Required** when `EventStore:Provider` is `marten` **or** `ReadModel:Provider` is `postgresql`. Throws `InvalidOperationException` at startup if absent. |
 
-**Example — switch to XML + PostgreSQL:**
+**Example — switch to XML + PostgreSQL (both stores):**
 ```json
 {
   "Serialization": { "Format": "xml" },
   "EventStore": { "Provider": "marten" },
+  "ReadModel": { "Provider": "postgresql" },
   "ConnectionStrings": {
     "PostgreSQL": "Host=localhost;Port=5432;Database=blogging;Username=postgres;Password=postgres"
   }

@@ -20,9 +20,7 @@ public static class InfrastructureServiceExtensions
         string? dbName = null)
     {
         RegisterEventStore(services, configuration);
-
-        services.AddDbContext<BloggingDbContext>(options =>
-            options.UseInMemoryDatabase(dbName ?? "BloggingDb"));
+        RegisterReadModel(services, configuration, dbName);
 
         services.AddScoped<IPostReadRepository, PostReadRepository>();
         services.AddScoped<IAuthorReadRepository, AuthorReadRepository>();
@@ -38,6 +36,29 @@ public static class InfrastructureServiceExtensions
         services.AddHostedService<DataSeeder>();
 
         return services;
+    }
+
+    private static void RegisterReadModel(IServiceCollection services, IConfiguration configuration, string? dbName)
+    {
+        var provider = configuration["ReadModel:Provider"] ?? "inmemory";
+
+        if (provider.Equals("postgresql", StringComparison.OrdinalIgnoreCase))
+        {
+            var connectionString = configuration.GetConnectionString("PostgreSQL")
+                ?? throw new InvalidOperationException(
+                    "Connection string 'PostgreSQL' is required when ReadModel:Provider is 'postgresql'.");
+
+            services.AddDbContext<BloggingDbContext>(options =>
+                options.UseNpgsql(connectionString));
+
+            // Runs migrations before DataSeeder (hosted services execute in registration order).
+            services.AddHostedService<DatabaseMigrator>();
+        }
+        else
+        {
+            services.AddDbContext<BloggingDbContext>(options =>
+                options.UseInMemoryDatabase(dbName ?? "BloggingDb"));
+        }
     }
 
     private static void RegisterEventStore(IServiceCollection services, IConfiguration configuration)
