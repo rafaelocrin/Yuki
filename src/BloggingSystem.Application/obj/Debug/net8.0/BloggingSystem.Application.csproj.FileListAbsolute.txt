@@ -1,0 +1,15 @@
+C:\Projects\Yuki\src\BloggingSystem.Application\bin\Debug\net8.0\BloggingSystem.Application.deps.json
+C:\Projects\Yuki\src\BloggingSystem.Application\bin\Debug\net8.0\BloggingSystem.Application.dll
+C:\Projects\Yuki\src\BloggingSystem.Application\bin\Debug\net8.0\BloggingSystem.Application.pdb
+C:\Projects\Yuki\src\BloggingSystem.Application\bin\Debug\net8.0\BloggingSystem.Domain.dll
+C:\Projects\Yuki\src\BloggingSystem.Application\bin\Debug\net8.0\BloggingSystem.Domain.pdb
+C:\Projects\Yuki\src\BloggingSystem.Application\obj\Debug\net8.0\BloggingSystem.Application.csproj.AssemblyReference.cache
+C:\Projects\Yuki\src\BloggingSystem.Application\obj\Debug\net8.0\BloggingSystem.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\Projects\Yuki\src\BloggingSystem.Application\obj\Debug\net8.0\BloggingSystem.Application.AssemblyInfoInputs.cache
+C:\Projects\Yuki\src\BloggingSystem.Application\obj\Debug\net8.0\BloggingSystem.Application.AssemblyInfo.cs
+C:\Projects\Yuki\src\BloggingSystem.Application\obj\Debug\net8.0\BloggingSystem.Application.csproj.CoreCompileInputs.cache
+C:\Projects\Yuki\src\BloggingSystem.Application\obj\Debug\net8.0\Blogging.69E0719E.Up2Date
+C:\Projects\Yuki\src\BloggingSystem.Application\obj\Debug\net8.0\BloggingSystem.Application.dll
+C:\Projects\Yuki\src\BloggingSystem.Application\obj\Debug\net8.0\refint\BloggingSystem.Application.dll
+C:\Projects\Yuki\src\BloggingSystem.Application\obj\Debug\net8.0\BloggingSystem.Application.pdb
+C:\Projects\Yuki\src\BloggingSystem.Application\obj\Debug\net8.0\ref\BloggingSystem.Application.dll

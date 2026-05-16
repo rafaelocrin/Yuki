@@ -1,0 +1,11 @@
+C:\Projects\Yuki\src\BloggingSystem.Domain\bin\Debug\net8.0\BloggingSystem.Domain.deps.json
+C:\Projects\Yuki\src\BloggingSystem.Domain\bin\Debug\net8.0\BloggingSystem.Domain.dll
+C:\Projects\Yuki\src\BloggingSystem.Domain\bin\Debug\net8.0\BloggingSystem.Domain.pdb
+C:\Projects\Yuki\src\BloggingSystem.Domain\obj\Debug\net8.0\BloggingSystem.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Projects\Yuki\src\BloggingSystem.Domain\obj\Debug\net8.0\BloggingSystem.Domain.AssemblyInfoInputs.cache
+C:\Projects\Yuki\src\BloggingSystem.Domain\obj\Debug\net8.0\BloggingSystem.Domain.AssemblyInfo.cs
+C:\Projects\Yuki\src\BloggingSystem.Domain\obj\Debug\net8.0\BloggingSystem.Domain.csproj.CoreCompileInputs.cache
+C:\Projects\Yuki\src\BloggingSystem.Domain\obj\Debug\net8.0\BloggingSystem.Domain.dll
+C:\Projects\Yuki\src\BloggingSystem.Domain\obj\Debug\net8.0\refint\BloggingSystem.Domain.dll
+C:\Projects\Yuki\src\BloggingSystem.Domain\obj\Debug\net8.0\BloggingSystem.Domain.pdb
+C:\Projects\Yuki\src\BloggingSystem.Domain\obj\Debug\net8.0\ref\BloggingSystem.Domain.dll
