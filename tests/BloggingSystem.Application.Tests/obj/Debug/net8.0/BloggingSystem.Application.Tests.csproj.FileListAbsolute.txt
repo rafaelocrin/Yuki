@@ -116,3 +116,4 @@ C:\Projects\Yuki\tests\BloggingSystem.Application.Tests\obj\Debug\net8.0\Bloggin
 C:\Projects\Yuki\tests\BloggingSystem.Application.Tests\obj\Debug\net8.0\ref\BloggingSystem.Application.Tests.dll
 C:\Projects\Yuki\tests\BloggingSystem.Application.Tests\bin\Debug\net8.0\FluentValidation.dll
 C:\Projects\Yuki\tests\BloggingSystem.Application.Tests\bin\Debug\net8.0\FluentValidation.DependencyInjectionExtensions.dll
+c:\Projects\Yuki\tests\BloggingSystem.Application.Tests\obj\Debug\net8.0\BloggingSystem.Application.Tests.sourcelink.json

@@ -187,6 +187,13 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "Marten": {
+              "target": "Package",
+              "version": "[7.*, )",
+              "noWarn": [
+                "NU1904"
+              ]
+            },
             "Microsoft.EntityFrameworkCore.InMemory": {
               "target": "Package",
               "version": "[8.0.15, )"

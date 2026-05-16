@@ -109,3 +109,4 @@ C:\Projects\Yuki\tests\BloggingSystem.Domain.Tests\obj\Debug\net8.0\refint\Blogg
 C:\Projects\Yuki\tests\BloggingSystem.Domain.Tests\obj\Debug\net8.0\BloggingSystem.Domain.Tests.pdb
 C:\Projects\Yuki\tests\BloggingSystem.Domain.Tests\obj\Debug\net8.0\BloggingSystem.Domain.Tests.genruntimeconfig.cache
 C:\Projects\Yuki\tests\BloggingSystem.Domain.Tests\obj\Debug\net8.0\ref\BloggingSystem.Domain.Tests.dll
+c:\Projects\Yuki\tests\BloggingSystem.Domain.Tests\obj\Debug\net8.0\BloggingSystem.Domain.Tests.sourcelink.json

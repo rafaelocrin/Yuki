@@ -7,15 +7,16 @@ A RESTful blogging API built with .NET 8, implementing Hexagonal Architecture, C
 ```
 ┌────────────────────────────────────────────────────────────────┐
 │  API Layer  (BloggingSystem.Api)                               │
-│  Minimal APIs — POST /post, GET /post/{id}                     │
+│  Minimal APIs — POST /post, GET /post/{id}, POST /author       │
 └──────────────────────┬─────────────────────────────────────────┘
                        │ IMediator
 ┌──────────────────────▼─────────────────────────────────────────┐
 │  Application Layer  (BloggingSystem.Application)               │
-│  CQRS: CreatePostCommand, GetPostByIdQuery                     │
+│  CQRS: CreatePostCommand, CreateAuthorCommand,                 │
+│        GetPostByIdQuery                                        │
 │  Ports: IEventStore, IPostReadRepository,                      │
 │         IAuthorReadRepository, IMessageSerializer              │
-│  PostProjection: translates events → read model               │
+│  Projections: PostProjection, AuthorProjection                 │
 └──────────┬──────────────────────────────────────────┬──────────┘
            │                                          │
 ┌──────────▼──────────┐                   ┌──────────▼──────────┐
@@ -24,10 +25,13 @@ A RESTful blogging API built with .NET 8, implementing Hexagonal Architecture, C
 │   .Domain)           │                   │  .Infrastructure)   │
 │                      │                   │                     │
 │  Aggregates:         │                   │ InMemoryEventStore  │
-│   Post, Author       │                   │ EF Core (InMemory)  │
-│  Domain Events       │                   │ JsonSerializer      │
-│  Value Objects       │                   │ DataSeeder          │
+│   Post, Author       │                   │ MartenEventStore *  │
+│  Domain Events       │                   │ EF Core (InMemory)  │
+│  Value Objects       │                   │ JsonSerializer      │
+│                      │                   │ XmlSerializer *     │
+│                      │                   │ DataSeeder          │
 └──────────────────────┘                   └─────────────────────┘
+                                           * config-switchable
 ```
 
 **Hexagonal boundaries**: Domain has zero infrastructure dependencies. Application defines ports (interfaces); Infrastructure implements them as adapters.
@@ -36,7 +40,9 @@ A RESTful blogging API built with .NET 8, implementing Hexagonal Architecture, C
 
 **CQRS**: Write side (commands) goes through the event store; read side (queries) hits the EF Core read model projection.
 
-**Serialization Strategy**: `IMessageSerializer` (Application port) decouples the format. `JsonMessageSerializer` is the current implementation — swap in `XmlMessageSerializer` without touching the API or Application layers.
+**Serialization Strategy**: `IMessageSerializer` (Application port) decouples the format. Switch between `JsonMessageSerializer` and `XmlMessageSerializer` via `appsettings.json` — no Application or API code changes needed.
+
+**Event Store Strategy**: `IEventStore` (Application port) decouples the persistence backend. Switch between `InMemoryEventStore` (default, no deps) and `MartenEventStore` (PostgreSQL via Marten 7.x) via `appsettings.json` — no Application or Domain code changes needed.
 
 ## Project Structure
 
@@ -58,6 +64,7 @@ tests/
 
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8)
 - Docker Desktop *(optional, for containerised run)*
+- PostgreSQL *(optional — only required when `EventStore:Provider` is `marten`)*
 
 ## Running Locally
 
@@ -110,7 +117,49 @@ Two authors are created automatically on startup. Use their IDs when calling `PO
 | Jane Doe    | `11111111-1111-1111-1111-111111111111` |
 | John Smith  | `22222222-2222-2222-2222-222222222222` |
 
+## Configuration
+
+All switches live in `appsettings.json` (or environment-specific overrides):
+
+| Key | Valid values | Default | Notes |
+|-----|-------------|---------|-------|
+| `Serialization:Format` | `json`, `xml` | `json` | Switches between `JsonMessageSerializer` and `XmlMessageSerializer`. |
+| `EventStore:Provider` | `inmemory`, `marten` | `inmemory` | Switches between `InMemoryEventStore` and `MartenEventStore` (PostgreSQL). |
+| `ConnectionStrings:PostgreSQL` | Npgsql connection string | *(none)* | **Required** when `EventStore:Provider` is `marten`. |
+
+**Example — switch to XML serialization + PostgreSQL event store:**
+
+```json
+{
+  "Serialization": { "Format": "xml" },
+  "EventStore": { "Provider": "marten" },
+  "ConnectionStrings": {
+    "PostgreSQL": "Host=localhost;Port=5432;Database=blogging;Username=postgres;Password=postgres"
+  }
+}
+```
+
 ## API Reference
+
+### POST /author
+
+Creates a new author.
+
+**Request body:**
+
+```json
+{
+  "name": "Alice",
+  "surname": "Smith"
+}
+```
+
+**Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 201    | Created — `{ "id": "<guid>" }`, `Location: /author/<id>` |
+| 400    | Validation error (empty name or surname) |
 
 ### POST /post
 
@@ -173,7 +222,15 @@ Retrieves a post by ID.
 ## Sample cURL Requests
 
 ```bash
-# Create a post
+# Create an author
+curl -X POST http://localhost:8080/author \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Alice",
+    "surname": "Smith"
+  }'
+
+# Create a post (using a seeded author ID)
 curl -X POST http://localhost:8080/post \
   -H "Content-Type: application/json" \
   -d '{

@@ -13,3 +13,4 @@ C:\Projects\Yuki\src\BloggingSystem.Application\obj\Debug\net8.0\BloggingSystem.
 C:\Projects\Yuki\src\BloggingSystem.Application\obj\Debug\net8.0\refint\BloggingSystem.Application.dll
 C:\Projects\Yuki\src\BloggingSystem.Application\obj\Debug\net8.0\BloggingSystem.Application.pdb
 C:\Projects\Yuki\src\BloggingSystem.Application\obj\Debug\net8.0\ref\BloggingSystem.Application.dll
+c:\Projects\Yuki\src\BloggingSystem.Application\obj\Debug\net8.0\BloggingSystem.Application.sourcelink.json

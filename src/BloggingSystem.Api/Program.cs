@@ -17,6 +17,7 @@ builder.Services.AddValidatorsFromAssembly(typeof(CreatePostCommand).Assembly);
 builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
 builder.Services.AddScoped<PostProjection>();
+builder.Services.AddScoped<AuthorProjection>();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -51,6 +52,7 @@ app.UseSwaggerUI(c =>
 
 app.MapCreatePostEndpoint();
 app.MapGetPostEndpoint();
+app.MapCreateAuthorEndpoint();
 
 app.Run();
 

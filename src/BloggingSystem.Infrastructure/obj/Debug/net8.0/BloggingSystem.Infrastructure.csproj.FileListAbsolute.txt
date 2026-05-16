@@ -15,3 +15,4 @@ C:\Projects\Yuki\src\BloggingSystem.Infrastructure\obj\Debug\net8.0\BloggingSyst
 C:\Projects\Yuki\src\BloggingSystem.Infrastructure\obj\Debug\net8.0\refint\BloggingSystem.Infrastructure.dll
 C:\Projects\Yuki\src\BloggingSystem.Infrastructure\obj\Debug\net8.0\BloggingSystem.Infrastructure.pdb
 C:\Projects\Yuki\src\BloggingSystem.Infrastructure\obj\Debug\net8.0\ref\BloggingSystem.Infrastructure.dll
+c:\Projects\Yuki\src\BloggingSystem.Infrastructure\obj\Debug\net8.0\BloggingSystem.Infrastructure.sourcelink.json

@@ -9,7 +9,7 @@ It is the canonical reference for architecture decisions, patterns, and iteratio
 
 Yuki Backend Technical Test — a blogging REST API in C# .NET 8.
 
-**Endpoints:** `POST /post`, `GET /post/{id}?includeAuthor=true`  
+**Endpoints:** `POST /post`, `GET /post/{id}?includeAuthor=true`, `POST /author`  
 **Entities:** `Post` (id, author_id, title, description, content), `Author` (id, name, surname)  
 **Seeded authors:** `11111111-1111-1111-1111-111111111111` (Jane Doe), `22222222-2222-2222-2222-222222222222` (John Smith)  
 **Swagger UI:** `http://localhost:5002/swagger`
@@ -24,14 +24,16 @@ Domain → Application → Infrastructure → API
 
 - **Domain** (`src/BloggingSystem.Domain/`): zero dependencies. `Post` and `Author` aggregate roots with `UncommittedEvents`, reconstitution, domain events (`PostCreatedEvent`, `AuthorCreatedEvent`), `AuthorId` value object.
 - **Application** (`src/BloggingSystem.Application/`): CQRS via MediatR. Ports (`IEventStore`, `IPostReadRepository`, `IAuthorReadRepository`, `IMessageSerializer`). `PostProjection` translates events → read model. Read models (`PostReadModel`, `AuthorReadModel`) defined here as plain POCOs.
-- **Infrastructure** (`src/BloggingSystem.Infrastructure/`): `InMemoryEventStore` (singleton, thread-safe), EF Core InMemory `BloggingDbContext`, `JsonMessageSerializer`, `DataSeeder` (seeds 2 authors via `IHostedService`), `InfrastructureServiceExtensions.AddInfrastructure()`.
+- **Infrastructure** (`src/BloggingSystem.Infrastructure/`): `InMemoryEventStore` + `MartenEventStore` (PostgreSQL via Marten 7.x, config-switchable), EF Core InMemory `BloggingDbContext`, `JsonMessageSerializer` + `XmlMessageSerializer` (config-switchable), `DataSeeder` (seeds 2 authors via `IHostedService`), `InfrastructureServiceExtensions.AddInfrastructure(IConfiguration)`.
 - **API** (`src/BloggingSystem.Api/`): Minimal APIs, Swashbuckle Swagger at `/swagger`. `public partial class Program {}` required for `WebApplicationFactory`.
 
 **Hexagonal boundary rule:** Domain and Application never reference Infrastructure or API namespaces. Infrastructure implements Application ports. API wires everything via DI.
 
 **Event Sourcing flow:** `CreatePostCommand` → `Post.Create()` raises `PostCreatedEvent` → append to `IEventStore` → `PostProjection.ProjectAsync()` upserts EF Core read model synchronously.
 
-**Serialization Strategy pattern:** `IMessageSerializer` (Application port) — currently `JsonMessageSerializer`. Adding XML support = implement `XmlMessageSerializer`, register in DI. No Application or API code changes needed.
+**Serialization Strategy pattern:** `IMessageSerializer` (Application port) — `JsonMessageSerializer` (default) or `XmlMessageSerializer`, selected via `Serialization:Format` in `appsettings.json`. No Application or API code changes needed to switch.
+
+**Event Store Strategy pattern:** `IEventStore` (Application port) — `InMemoryEventStore` (default, no deps) or `MartenEventStore` (PostgreSQL via Marten), selected via `EventStore:Provider` in `appsettings.json`. No Application or Domain code changes needed to switch.
 
 ---
 
@@ -56,19 +58,42 @@ Domain → Application → Infrastructure → API
 
 ## Tests
 
-102 tests, 0 failures. Run with `dotnet test`.
+128 tests, 0 failures. Run with `dotnet test`.
 
 | Project | Count | Type |
 |---------|-------|------|
 | `BloggingSystem.Domain.Tests` | 26 | Pure unit |
-| `BloggingSystem.Application.Tests` | 23 | Unit (NSubstitute mocks + concrete validators) |
-| `BloggingSystem.Infrastructure.Tests` | 24 | Integration (real EF InMemory) |
-| `BloggingSystem.Api.Tests` | 23 | Functional (WebApplicationFactory) |
+| `BloggingSystem.Application.Tests` | 36 | Unit (NSubstitute mocks + concrete validators) |
+| `BloggingSystem.Infrastructure.Tests` | 32 | Integration + DI registration |
+| `BloggingSystem.Api.Tests` | 27 | Functional (WebApplicationFactory) |
 | `BloggingSystem.Architecture.Tests` | 7 | Architecture (NetArchTest.Rules) |
 
 **Test isolation:** `BloggingApiFactory` replaces the DbContext with a unique `Guid.NewGuid()` InMemory database per factory instance to prevent cross-test contamination.
 
 **Coverage target:** >90%. Run `dotnet test --collect:"XPlat Code Coverage"` to measure.
+
+---
+
+## Configuration
+
+All switches live in `appsettings.json` (or environment-specific overrides like `appsettings.Development.json`).
+
+| Key | Valid values | Default | Notes |
+|-----|-------------|---------|-------|
+| `Serialization:Format` | `json`, `xml` | `json` | Switches `IMessageSerializer` — `JsonMessageSerializer` or `XmlMessageSerializer`. No Application/API code changes needed. |
+| `EventStore:Provider` | `inmemory`, `marten` | `inmemory` | Switches `IEventStore` — `InMemoryEventStore` (no deps) or `MartenEventStore` (PostgreSQL via Marten 7.x). No Application/Domain code changes needed. |
+| `ConnectionStrings:PostgreSQL` | Npgsql connection string | *(none)* | **Required** when `EventStore:Provider` is `marten`. Throws `InvalidOperationException` at startup if absent. |
+
+**Example — switch to XML + PostgreSQL:**
+```json
+{
+  "Serialization": { "Format": "xml" },
+  "EventStore": { "Provider": "marten" },
+  "ConnectionStrings": {
+    "PostgreSQL": "Host=localhost;Port=5432;Database=blogging;Username=postgres;Password=postgres"
+  }
+}
+```
 
 ---
 
@@ -104,7 +129,7 @@ Things to improve in future sessions, in priority order:
 
 ```bash
 dotnet build                                         # build solution
-dotnet test                                          # run all 102 tests
+dotnet test                                          # run all 128 tests
 dotnet test --collect:"XPlat Code Coverage"          # with coverage
 dotnet run --project src/BloggingSystem.Api          # run locally (port 5002)
 docker compose up --build                            # run in Docker (port 8080)
@@ -124,4 +149,4 @@ docker compose up --build                            # run in Docker (port 8080)
 - All new infrastructure implementations must register via `InfrastructureServiceExtensions.AddInfrastructure()`.
 - New endpoints must chain `.WithName()`, `.WithTags("Posts")`, `.Produces<T>()` for Swagger completeness.
 - New tests must follow the existing pattern: unit tests mock ports via NSubstitute; functional tests use `BloggingApiFactory`.
-- Do not skip `dotnet test` after changes — all 102 tests must remain green.
+- Do not skip `dotnet test` after changes — all 128 tests must remain green.
