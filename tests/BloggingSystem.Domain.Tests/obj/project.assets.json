@@ -5822,8 +5822,8 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "c:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj": {
-              "projectPath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj"
+            "C:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj": {
+              "projectPath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj"
             }
           }
         }

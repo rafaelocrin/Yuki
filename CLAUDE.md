@@ -53,22 +53,26 @@ Domain → Application → Infrastructure → API
 | `src/BloggingSystem.Api/Program.cs` | App entry point + Swagger |
 | `src/BloggingSystem.Api/Endpoints/CreatePostEndpoint.cs` | POST /post |
 | `src/BloggingSystem.Api/Endpoints/GetPostEndpoint.cs` | GET /post/{id} |
+| `src/BloggingSystem.Api/Middleware/CorrelationIdMiddleware.cs` | X-Correlation-ID header → Serilog LogContext |
+| `src/BloggingSystem.Api/Middleware/GlobalExceptionHandler.cs` | RFC 7807 ProblemDetails for all exceptions |
+| `src/BloggingSystem.Application/Behaviors/LoggingBehavior.cs` | MediatR pipeline: request/response logging |
+| `src/BloggingSystem.Application/Behaviors/ValidationBehavior.cs` | MediatR pipeline: FluentValidation enforcement |
 
 ---
 
 ## Tests
 
-150 tests, 0 failures. Run with `dotnet test`.
+156 tests, 0 failures. Run with `dotnet test`.
 
 | Project | Count | Type |
 |---------|-------|------|
 | `BloggingSystem.Domain.Tests` | 26 | Pure unit |
-| `BloggingSystem.Application.Tests` | 46 | Unit (NSubstitute mocks + concrete validators) |
+| `BloggingSystem.Application.Tests` | 48 | Unit (NSubstitute mocks + concrete validators) |
 | `BloggingSystem.Infrastructure.Tests` | 36 | Integration + DI registration |
-| `BloggingSystem.Api.Tests` | 35 | Functional (WebApplicationFactory) |
+| `BloggingSystem.Api.Tests` | 39 | Functional (WebApplicationFactory) |
 | `BloggingSystem.Architecture.Tests` | 7 | Architecture (NetArchTest.Rules) |
 
-**Test isolation:** `BloggingApiFactory` replaces the DbContext with a unique `Guid.NewGuid()` InMemory database per factory instance to prevent cross-test contamination.
+**Test isolation:** `BloggingApiFactory` replaces the DbContext with a unique `Guid.NewGuid()` InMemory database per factory instance, overrides `IEventStore` to InMemory, and clears health check registrations so tests never touch PostgreSQL.
 
 **Coverage target:** >90%. Run `dotnet test --collect:"XPlat Code Coverage"` to measure.
 
@@ -103,9 +107,9 @@ All switches live in `appsettings.json` (or environment-specific overrides like 
 
 | Project | Packages |
 |---------|----------|
-| Application | MediatR 12.x |
-| Infrastructure | EF Core InMemory 8.x, Microsoft.Extensions.Hosting.Abstractions 8.x |
-| API | Swashbuckle.AspNetCore 6.x |
+| Application | MediatR 12.x, FluentValidation 12.x, FluentValidation.DependencyInjectionExtensions 12.x, Microsoft.Extensions.Logging.Abstractions 8.x |
+| Infrastructure | EF Core InMemory 8.x, Npgsql.EntityFrameworkCore.PostgreSQL 8.x, Marten 7.x, AspNetCore.HealthChecks.Npgsql 8.x, Microsoft.Extensions.Hosting.Abstractions 8.x |
+| API | Swashbuckle.AspNetCore 6.x, FluentValidation 12.x, Serilog.AspNetCore 8.x, Serilog.Enrichers.Environment 3.x, Serilog.Enrichers.Thread 4.x |
 | All test projects | xUnit, FluentAssertions 6.x, NSubstitute 5.x |
 | Api.Tests | Microsoft.AspNetCore.Mvc.Testing 8.x |
 | Architecture.Tests | NetArchTest.Rules 1.3.x |
@@ -123,9 +127,9 @@ Remaining improvements, grouped by production-readiness dimension:
 4. **Secret management** — Move the `ConnectionStrings:PostgreSQL` value out of `appsettings.json` into environment variables or a secrets manager (Azure Key Vault, AWS Secrets Manager) before shipping to production.
 
 ### Observability
-5. **Structured logging** — Replace plain `ILogger` calls with Serilog or OpenTelemetry-backed structured logging; emit `postId`, `authorId`, `correlationId` on every request.
-6. **Distributed tracing** — Wire `OpenTelemetry.Extensions.Hosting` with OTLP exporter so spans are visible in Jaeger/Tempo; instrument MediatR pipeline and EF Core queries.
-7. **Health checks** — Register `AddHealthChecks()` with probes for PostgreSQL (`AddNpgsql`) and Marten; expose `/healthz/live` and `/healthz/ready` for container orchestrators.
+5. ~~**Structured logging**~~ ✅ Serilog structured logging with `CorrelationId` enrichment via `X-Correlation-ID` header and `LoggingBehavior` MediatR pipeline. Config-driven minimum levels.
+6. ~~**Health checks**~~ ✅ `/healthz/live` (liveness, no checks) and `/healthz/ready` (readiness, PostgreSQL probe tagged "ready") exposed with JSON response writer.
+7. **Distributed tracing** — Wire `OpenTelemetry.Extensions.Hosting` with OTLP exporter so spans are visible in Jaeger/Tempo; instrument MediatR pipeline and EF Core queries.
 8. **Metrics** — Expose Prometheus-compatible metrics (`/metrics`) via `prometheus-net.AspNetCore`; track request latency, command throughput, and projection lag.
 9. **OpenAPI XML comments** — Enable `<GenerateDocumentationFile>true</GenerateDocumentationFile>` in the API project and wire XML docs into `AddSwaggerGen` for richer Swagger descriptions.
 
@@ -185,7 +189,7 @@ src/
 
 ```bash
 dotnet build                                         # build solution
-dotnet test                                          # run all 150 tests
+dotnet test                                          # run all 156 tests
 dotnet test --collect:"XPlat Code Coverage"          # with coverage
 dotnet run --project src/BloggingSystem.Api          # run locally (port 5002)
 docker compose up --build                            # run in Docker (port 8080)

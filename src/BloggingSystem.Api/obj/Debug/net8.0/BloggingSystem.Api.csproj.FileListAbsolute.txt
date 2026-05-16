@@ -206,3 +206,15 @@ C:\Projects\Yuki\src\BloggingSystem.Api\bin\Debug\net8.0\Microsoft.EntityFramewo
 C:\Projects\Yuki\src\BloggingSystem.Api\bin\Debug\net8.0\Microsoft.Extensions.DependencyModel.dll
 C:\Projects\Yuki\src\BloggingSystem.Api\bin\Debug\net8.0\Mono.TextTemplating.dll
 C:\Projects\Yuki\src\BloggingSystem.Api\bin\Debug\net8.0\System.CodeDom.dll
+C:\Projects\Yuki\src\BloggingSystem.Api\bin\Debug\net8.0\HealthChecks.NpgSql.dll
+C:\Projects\Yuki\src\BloggingSystem.Api\bin\Debug\net8.0\Serilog.dll
+C:\Projects\Yuki\src\BloggingSystem.Api\bin\Debug\net8.0\Serilog.AspNetCore.dll
+C:\Projects\Yuki\src\BloggingSystem.Api\bin\Debug\net8.0\Serilog.Enrichers.Environment.dll
+C:\Projects\Yuki\src\BloggingSystem.Api\bin\Debug\net8.0\Serilog.Enrichers.Thread.dll
+C:\Projects\Yuki\src\BloggingSystem.Api\bin\Debug\net8.0\Serilog.Extensions.Hosting.dll
+C:\Projects\Yuki\src\BloggingSystem.Api\bin\Debug\net8.0\Serilog.Extensions.Logging.dll
+C:\Projects\Yuki\src\BloggingSystem.Api\bin\Debug\net8.0\Serilog.Formatting.Compact.dll
+C:\Projects\Yuki\src\BloggingSystem.Api\bin\Debug\net8.0\Serilog.Settings.Configuration.dll
+C:\Projects\Yuki\src\BloggingSystem.Api\bin\Debug\net8.0\Serilog.Sinks.Console.dll
+C:\Projects\Yuki\src\BloggingSystem.Api\bin\Debug\net8.0\Serilog.Sinks.Debug.dll
+C:\Projects\Yuki\src\BloggingSystem.Api\bin\Debug\net8.0\Serilog.Sinks.File.dll

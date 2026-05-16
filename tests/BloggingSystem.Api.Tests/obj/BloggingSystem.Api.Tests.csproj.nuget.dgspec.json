@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "c:\\Projects\\Yuki\\tests\\BloggingSystem.Api.Tests\\BloggingSystem.Api.Tests.csproj": {}
+    "C:\\Projects\\Yuki\\tests\\BloggingSystem.Api.Tests\\BloggingSystem.Api.Tests.csproj": {}
   },
   "projects": {
-    "c:\\Projects\\Yuki\\src\\BloggingSystem.Api\\BloggingSystem.Api.csproj": {
+    "C:\\Projects\\Yuki\\src\\BloggingSystem.Api\\BloggingSystem.Api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "c:\\Projects\\Yuki\\src\\BloggingSystem.Api\\BloggingSystem.Api.csproj",
+        "projectUniqueName": "C:\\Projects\\Yuki\\src\\BloggingSystem.Api\\BloggingSystem.Api.csproj",
         "projectName": "BloggingSystem.Api",
-        "projectPath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Api\\BloggingSystem.Api.csproj",
+        "projectPath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Api\\BloggingSystem.Api.csproj",
         "packagesPath": "C:\\Users\\rafae\\.nuget\\packages\\",
-        "outputPath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Api\\obj\\",
+        "outputPath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Api\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\rafae\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -28,11 +28,11 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "c:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj": {
-                "projectPath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj"
+              "C:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj": {
+                "projectPath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj"
               },
-              "c:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\BloggingSystem.Infrastructure.csproj": {
-                "projectPath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\BloggingSystem.Infrastructure.csproj"
+              "C:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\BloggingSystem.Infrastructure.csproj": {
+                "projectPath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\BloggingSystem.Infrastructure.csproj"
               }
             }
           }
@@ -62,6 +62,18 @@
               "target": "Package",
               "version": "[8.0.15, )"
             },
+            "Serilog.AspNetCore": {
+              "target": "Package",
+              "version": "[8.*, )"
+            },
+            "Serilog.Enrichers.Environment": {
+              "target": "Package",
+              "version": "[3.*, )"
+            },
+            "Serilog.Enrichers.Thread": {
+              "target": "Package",
+              "version": "[4.*, )"
+            },
             "Swashbuckle.AspNetCore": {
               "target": "Package",
               "version": "[6.9.0, )"
@@ -90,14 +102,14 @@
         }
       }
     },
-    "c:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj": {
+    "C:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "c:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj",
+        "projectUniqueName": "C:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj",
         "projectName": "BloggingSystem.Application",
-        "projectPath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj",
+        "projectPath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj",
         "packagesPath": "C:\\Users\\rafae\\.nuget\\packages\\",
-        "outputPath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Application\\obj\\",
+        "outputPath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Application\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\rafae\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -114,8 +126,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "c:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj": {
-                "projectPath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj"
+              "C:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj": {
+                "projectPath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj"
               }
             }
           }
@@ -146,6 +158,10 @@
             "MediatR": {
               "target": "Package",
               "version": "[12.4.1, )"
+            },
+            "Microsoft.Extensions.Logging.Abstractions": {
+              "target": "Package",
+              "version": "[8.*, )"
             }
           },
           "imports": [
@@ -168,14 +184,14 @@
         }
       }
     },
-    "c:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj": {
+    "C:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "c:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj",
+        "projectUniqueName": "C:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj",
         "projectName": "BloggingSystem.Domain",
-        "projectPath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj",
+        "projectPath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj",
         "packagesPath": "C:\\Users\\rafae\\.nuget\\packages\\",
-        "outputPath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\obj\\",
+        "outputPath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\rafae\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -228,14 +244,14 @@
         }
       }
     },
-    "c:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\BloggingSystem.Infrastructure.csproj": {
+    "C:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\BloggingSystem.Infrastructure.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "c:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\BloggingSystem.Infrastructure.csproj",
+        "projectUniqueName": "C:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\BloggingSystem.Infrastructure.csproj",
         "projectName": "BloggingSystem.Infrastructure",
-        "projectPath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\BloggingSystem.Infrastructure.csproj",
+        "projectPath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\BloggingSystem.Infrastructure.csproj",
         "packagesPath": "C:\\Users\\rafae\\.nuget\\packages\\",
-        "outputPath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\obj\\",
+        "outputPath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\rafae\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -252,8 +268,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "c:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj": {
-                "projectPath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj"
+              "C:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj": {
+                "projectPath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj"
               }
             }
           }
@@ -273,6 +289,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "AspNetCore.HealthChecks.Npgsql": {
+              "target": "Package",
+              "version": "[8.*, )"
+            },
             "Marten": {
               "target": "Package",
               "version": "[7.*, )",
@@ -323,14 +343,14 @@
         }
       }
     },
-    "c:\\Projects\\Yuki\\tests\\BloggingSystem.Api.Tests\\BloggingSystem.Api.Tests.csproj": {
+    "C:\\Projects\\Yuki\\tests\\BloggingSystem.Api.Tests\\BloggingSystem.Api.Tests.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "c:\\Projects\\Yuki\\tests\\BloggingSystem.Api.Tests\\BloggingSystem.Api.Tests.csproj",
+        "projectUniqueName": "C:\\Projects\\Yuki\\tests\\BloggingSystem.Api.Tests\\BloggingSystem.Api.Tests.csproj",
         "projectName": "BloggingSystem.Api.Tests",
-        "projectPath": "c:\\Projects\\Yuki\\tests\\BloggingSystem.Api.Tests\\BloggingSystem.Api.Tests.csproj",
+        "projectPath": "C:\\Projects\\Yuki\\tests\\BloggingSystem.Api.Tests\\BloggingSystem.Api.Tests.csproj",
         "packagesPath": "C:\\Users\\rafae\\.nuget\\packages\\",
-        "outputPath": "c:\\Projects\\Yuki\\tests\\BloggingSystem.Api.Tests\\obj\\",
+        "outputPath": "C:\\Projects\\Yuki\\tests\\BloggingSystem.Api.Tests\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\rafae\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -347,17 +367,17 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "c:\\Projects\\Yuki\\src\\BloggingSystem.Api\\BloggingSystem.Api.csproj": {
-                "projectPath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Api\\BloggingSystem.Api.csproj"
+              "C:\\Projects\\Yuki\\src\\BloggingSystem.Api\\BloggingSystem.Api.csproj": {
+                "projectPath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Api\\BloggingSystem.Api.csproj"
               },
-              "c:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj": {
-                "projectPath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj"
+              "C:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj": {
+                "projectPath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj"
               },
-              "c:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj": {
-                "projectPath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj"
+              "C:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj": {
+                "projectPath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj"
               },
-              "c:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\BloggingSystem.Infrastructure.csproj": {
-                "projectPath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\BloggingSystem.Infrastructure.csproj"
+              "C:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\BloggingSystem.Infrastructure.csproj": {
+                "projectPath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\BloggingSystem.Infrastructure.csproj"
               }
             }
           }

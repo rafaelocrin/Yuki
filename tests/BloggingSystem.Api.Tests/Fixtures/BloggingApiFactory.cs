@@ -5,8 +5,10 @@ using BloggingSystem.Infrastructure.Persistence.ReadModel;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace BloggingSystem.Api.Tests.Fixtures;
 
@@ -16,6 +18,16 @@ public sealed class BloggingApiFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // Force InMemory providers so tests never touch PostgreSQL/Marten/health-check probes.
+        builder.ConfigureAppConfiguration((_, cfg) =>
+        {
+            cfg.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["EventStore:Provider"] = "inmemory",
+                ["ReadModel:Provider"] = "inmemory"
+            });
+        });
+
         builder.ConfigureServices(services =>
         {
             // Replace DbContext with a unique InMemory instance per factory for test isolation.
@@ -30,6 +42,9 @@ public sealed class BloggingApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<InMemoryEventStore>();
             services.AddSingleton<InMemoryEventStore>();
             services.AddSingleton<IEventStore>(sp => sp.GetRequiredService<InMemoryEventStore>());
+
+            // Clear any PostgreSQL health check probes so tests never need a live database.
+            services.Configure<HealthCheckServiceOptions>(opts => opts.Registrations.Clear());
         });
     }
 }
