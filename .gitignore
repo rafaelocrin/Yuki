@@ -1,27 +1,66 @@
-# Build output
+# ── Build output ────────────────────────────────────────────
 bin/
 obj/
 
-# NuGet
+# ── NuGet ────────────────────────────────────────────────────
 *.nupkg
+*.snupkg
 .nuget/
+packages/
 
-# VS / Rider
+# ── IDE — Visual Studio ──────────────────────────────────────
 .vs/
-.idea/
 *.user
 *.suo
+*.userosscache
+*.sln.docstates
 
-# Coverage
-TestResults/
+# ── IDE — Rider / IntelliJ ───────────────────────────────────
+.idea/
+*.iml
+
+# ── IDE — VS Code ────────────────────────────────────────────
+.vscode/
+
+# ── Test output / coverage ───────────────────────────────────
+**/TestResults/
 coveragereport/
+*.coverage
+*.coveragexml
+coverage.cobertura.xml
+*.received.*
+*.approved.*
 
-# OS
+# ── Secrets / environment ────────────────────────────────────
+.env
+.env.*
+secrets.json
+appsettings.secrets.json
+*.pfx
+*.p12
+*.pem
+*.key
+
+# ── Docker local overrides ───────────────────────────────────
+docker-compose.override.yml
+
+# ── Logs ─────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── OS artefacts ─────────────────────────────────────────────
 .DS_Store
 Thumbs.db
+*.swp
+*.bak
 
-# Executables / installers (never commit these)
+# ── Executables / installers ─────────────────────────────────
 *.exe
 *.msi
 *.dmg
 *.pkg
+*.deb
+*.rpm
+
+# ── AI workflow files ────────────────────────────────────────
+gemini-claude.md
