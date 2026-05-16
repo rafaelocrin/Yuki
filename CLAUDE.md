@@ -114,16 +114,70 @@ All switches live in `appsettings.json` (or environment-specific overrides like 
 
 ## Iteration Targets
 
-Things to improve in future sessions, in priority order:
+Remaining improvements, grouped by production-readiness dimension:
 
-1. **XML serializer** — implement `XmlMessageSerializer : IMessageSerializer` in Infrastructure; add a config switch (e.g., `appsettings.json` key) to select format at startup.
-2. **`POST /author` endpoint** — currently authors are seeded at startup; a real create-author flow would complete the domain model.
-3. **Persistent event store** — replace `InMemoryEventStore` with a real store (Marten/PostgreSQL or EventStoreDB) behind the same `IEventStore` port — no Application/Domain changes required.
-4. **Persistent read model** — replace EF Core InMemory with SQL Server or PostgreSQL; add EF Core migrations.
-5. **Pagination** — `GET /post` list endpoint with cursor or page-based pagination.
-6. **Validation middleware** — centralise validation errors into RFC 7807 `ProblemDetails` responses instead of `{ error: "..." }` anonymous objects.
-7. **Auth** — add JWT bearer authentication; scope `POST /post` to authenticated authors only.
-8. **OpenAPI XML comments** — enable `<GenerateDocumentationFile>true</GenerateDocumentationFile>` in the API project and wire XML comments into `AddSwaggerGen` for richer Swagger descriptions.
+### Security
+1. **Auth** — Add JWT bearer authentication; scope `POST /post` and `POST /author` to authenticated users. Consider an `ICurrentUserService` port so domain logic stays auth-agnostic.
+2. **Input sanitisation** — Strip or reject HTML/script content in `title`, `description`, and `content` fields to prevent stored-XSS if output is ever rendered in a browser.
+3. **Rate limiting** — Apply ASP.NET Core's built-in rate limiter (`AddRateLimiter`) to write endpoints to prevent abuse.
+4. **Secret management** — Move the `ConnectionStrings:PostgreSQL` value out of `appsettings.json` into environment variables or a secrets manager (Azure Key Vault, AWS Secrets Manager) before shipping to production.
+
+### Observability
+5. **Structured logging** — Replace plain `ILogger` calls with Serilog or OpenTelemetry-backed structured logging; emit `postId`, `authorId`, `correlationId` on every request.
+6. **Distributed tracing** — Wire `OpenTelemetry.Extensions.Hosting` with OTLP exporter so spans are visible in Jaeger/Tempo; instrument MediatR pipeline and EF Core queries.
+7. **Health checks** — Register `AddHealthChecks()` with probes for PostgreSQL (`AddNpgsql`) and Marten; expose `/healthz/live` and `/healthz/ready` for container orchestrators.
+8. **Metrics** — Expose Prometheus-compatible metrics (`/metrics`) via `prometheus-net.AspNetCore`; track request latency, command throughput, and projection lag.
+9. **OpenAPI XML comments** — Enable `<GenerateDocumentationFile>true</GenerateDocumentationFile>` in the API project and wire XML docs into `AddSwaggerGen` for richer Swagger descriptions.
+
+### Resilience
+10. **Retry / circuit-breaker** — Wrap PostgreSQL calls (EF Core + Marten) with Polly retry and circuit-breaker policies to handle transient failures.
+11. **Idempotent command handling** — Add an `IdempotencyKey` header; store processed command IDs to make `POST /post` and `POST /author` safe to retry without duplicate data.
+12. **Outbox pattern** — Move event appending + projection into a transactional outbox so a process crash between `AppendEventsAsync` and `ProjectAsync` cannot leave the read model stale.
+
+### Scalability & Performance
+13. **Async projection worker** — Decouple `PostProjection` from the write path; have a background worker consume events from Marten's async daemon so the command handler returns faster.
+14. **Read-model caching** — Add a Redis-backed response cache for `GET /post/{id}` and `GET /post`; invalidate on `PostCreatedEvent`.
+15. **`GET /author/{id}` query** — Add a read endpoint for authors so consumers don't need to embed author data in every post fetch.
+16. **Cursor-based pagination** — Upgrade `GET /post` from page-based to keyset/cursor pagination (`?after=<createdAt>&limit=20`) for consistent performance at large offsets.
+
+### Availability
+17. **Graceful shutdown** — Configure `hostOptions.ShutdownTimeout` and honour `CancellationToken` in all hosted services so rolling deploys drain cleanly.
+18. **Database migrations as init container** — Move `DatabaseMigrator` out of the API startup path into a Kubernetes init container or separate migration job to avoid blocking pod startup.
+
+### Architecture Evolution — Standard Monolith → Modular Monolith
+
+The current codebase is a well-layered hexagonal monolith. The natural next step toward independent deployability (and eventually microservices) is to decompose it into **vertical modules**, each owning its own domain, application, and infrastructure slice. The transition can be done incrementally without breaking changes.
+
+**Target module structure:**
+
+```
+src/
+  Modules/
+    Posts/
+      Posts.Domain/          # Post aggregate, PostId, PostCreatedEvent
+      Posts.Application/     # CreatePostCommand, GetPostsQuery, IPostReadRepository, PostProjection
+      Posts.Infrastructure/  # PostReadRepository, PostDbContext (owns "posts" schema)
+    Authors/
+      Authors.Domain/        # Author aggregate, AuthorId, AuthorCreatedEvent
+      Authors.Application/   # CreateAuthorCommand, IAuthorReadRepository, AuthorProjection
+      Authors.Infrastructure/# AuthorReadRepository, AuthorDbContext (owns "authors" schema)
+  Shared/
+    Shared.Domain/           # IDomainEvent, IDateTimeProvider, shared value objects
+    Shared.Application/      # IEventStore, IMessageSerializer, ValidationBehavior, PagedResult<T>
+    Shared.Infrastructure/   # InMemoryEventStore, MartenEventStore, serializers, DI extensions
+  BloggingSystem.Api/        # Thin host — wires modules, Swagger, middleware
+```
+
+**Key steps:**
+
+19. **Define module public contracts** — Each module exposes only its command/query records and response DTOs as its public API. Domain aggregates and read models are internal (`internal sealed class`).
+20. **Schema isolation** — Give each module its own EF Core `DbContext` with a dedicated PostgreSQL schema (`posts` and `authors`). Remove the shared `BloggingDbContext` that crosses module boundaries.
+21. **In-process integration events** — Replace `PostProjection` calling `IAuthorReadRepository` directly with a MediatR `INotificationHandler<AuthorCreatedEvent>` inside the Posts module, so modules communicate via events rather than direct port calls.
+22. **Per-module DI registration** — Replace the single `AddInfrastructure()` call with `services.AddPostsModule(config)` and `services.AddAuthorsModule(config)`, each internally registering their own repositories, projections, and validators.
+23. **Per-module Architecture tests** — Extend `LayerDependencyTests` to assert that `Posts.*` assemblies never reference `Authors.*` assemblies (and vice versa), enforcing the module boundary at compile time.
+24. **Feature flags per module** — Once modules are self-contained, each can be toggled or deployed independently, enabling a low-risk path toward extracting a module into a microservice when load demands it.
+
+> **Why this matters for the production dimensions above:** Schema isolation removes the shared-table write contention that limits scalability; module boundaries make it safe to apply different retry/cache policies per domain; independent `DbContext` per module allows schema migrations to be scoped and rolled back without affecting other modules.
 
 ---
 
@@ -131,7 +185,7 @@ Things to improve in future sessions, in priority order:
 
 ```bash
 dotnet build                                         # build solution
-dotnet test                                          # run all 128 tests
+dotnet test                                          # run all 150 tests
 dotnet test --collect:"XPlat Code Coverage"          # with coverage
 dotnet run --project src/BloggingSystem.Api          # run locally (port 5002)
 docker compose up --build                            # run in Docker (port 8080)
@@ -151,4 +205,4 @@ docker compose up --build                            # run in Docker (port 8080)
 - All new infrastructure implementations must register via `InfrastructureServiceExtensions.AddInfrastructure()`.
 - New endpoints must chain `.WithName()`, `.WithTags("Posts")`, `.Produces<T>()` for Swagger completeness.
 - New tests must follow the existing pattern: unit tests mock ports via NSubstitute; functional tests use `BloggingApiFactory`.
-- Do not skip `dotnet test` after changes — all 128 tests must remain green.
+- Do not skip `dotnet test` after changes — all 150 tests must remain green.
