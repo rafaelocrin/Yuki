@@ -1,0 +1,27 @@
+# Build output
+bin/
+obj/
+
+# NuGet
+*.nupkg
+.nuget/
+
+# VS / Rider
+.vs/
+.idea/
+*.user
+*.suo
+
+# Coverage
+TestResults/
+coveragereport/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Executables / installers (never commit these)
+*.exe
+*.msi
+*.dmg
+*.pkg
