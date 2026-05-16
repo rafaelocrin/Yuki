@@ -52,6 +52,7 @@ app.UseSwaggerUI(c =>
 
 app.MapCreatePostEndpoint();
 app.MapGetPostEndpoint();
+app.MapGetPostsEndpoint();
 app.MapCreateAuthorEndpoint();
 
 app.Run();

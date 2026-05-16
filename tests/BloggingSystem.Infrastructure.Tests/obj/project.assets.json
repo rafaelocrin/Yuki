@@ -10033,11 +10033,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Projects\\Yuki\\tests\\BloggingSystem.Infrastructure.Tests\\BloggingSystem.Infrastructure.Tests.csproj",
+      "projectUniqueName": "c:\\Projects\\Yuki\\tests\\BloggingSystem.Infrastructure.Tests\\BloggingSystem.Infrastructure.Tests.csproj",
       "projectName": "BloggingSystem.Infrastructure.Tests",
-      "projectPath": "C:\\Projects\\Yuki\\tests\\BloggingSystem.Infrastructure.Tests\\BloggingSystem.Infrastructure.Tests.csproj",
+      "projectPath": "c:\\Projects\\Yuki\\tests\\BloggingSystem.Infrastructure.Tests\\BloggingSystem.Infrastructure.Tests.csproj",
       "packagesPath": "C:\\Users\\rafae\\.nuget\\packages\\",
-      "outputPath": "C:\\Projects\\Yuki\\tests\\BloggingSystem.Infrastructure.Tests\\obj\\",
+      "outputPath": "c:\\Projects\\Yuki\\tests\\BloggingSystem.Infrastructure.Tests\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\rafae\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -10054,14 +10054,14 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "C:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj": {
-              "projectPath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj"
+            "c:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj": {
+              "projectPath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj"
             },
-            "C:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj": {
-              "projectPath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj"
+            "c:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj": {
+              "projectPath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj"
             },
-            "C:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\BloggingSystem.Infrastructure.csproj": {
-              "projectPath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\BloggingSystem.Infrastructure.csproj"
+            "c:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\BloggingSystem.Infrastructure.csproj": {
+              "projectPath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\BloggingSystem.Infrastructure.csproj"
             }
           }
         }

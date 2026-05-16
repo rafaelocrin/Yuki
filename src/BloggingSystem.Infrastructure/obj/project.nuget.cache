@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "yUYOxe93y2s=",
+  "dgSpecHash": "6X0V0h7LQtM=",
   "success": true,
-  "projectFilePath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\BloggingSystem.Infrastructure.csproj",
+  "projectFilePath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\BloggingSystem.Infrastructure.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\rafae\\.nuget\\packages\\fastexpressioncompiler\\4.2.2\\fastexpressioncompiler.4.2.2.nupkg.sha512",
     "C:\\Users\\rafae\\.nuget\\packages\\fluentvalidation\\12.1.1\\fluentvalidation.12.1.1.nupkg.sha512",

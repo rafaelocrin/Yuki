@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "U8c15qE3WEQ=",
+  "dgSpecHash": "s5PmvciwKV8=",
   "success": true,
-  "projectFilePath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj",
+  "projectFilePath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\rafae\\.nuget\\packages\\fluentvalidation\\12.1.1\\fluentvalidation.12.1.1.nupkg.sha512",
     "C:\\Users\\rafae\\.nuget\\packages\\fluentvalidation.dependencyinjectionextensions\\12.1.1\\fluentvalidation.dependencyinjectionextensions.12.1.1.nupkg.sha512",

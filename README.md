@@ -221,6 +221,46 @@ Creates a new author.
 | 201    | Created — `{ "id": "<guid>" }`, `Location: /author/<id>` |
 | 400    | Validation error (empty name or surname) |
 
+### GET /post
+
+Returns a paginated list of posts ordered by creation date.
+
+**Query parameters:**
+
+| Parameter      | Type    | Default | Description                            |
+|----------------|---------|---------|----------------------------------------|
+| `page`         | integer | `1`     | Page number (1-indexed)                |
+| `pageSize`     | integer | `10`    | Items per page (1–100)                 |
+| `includeAuthor`| boolean | `false` | Embed author details in each item      |
+
+**Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 200    | Paged result (see below) |
+| 400    | Invalid `page` or `pageSize` |
+
+**Example response:**
+
+```json
+{
+  "items": [
+    {
+      "id": "a3f1c2d4-...",
+      "authorId": "11111111-...",
+      "title": "My Post",
+      "description": "Short summary",
+      "content": "Full body.",
+      "author": null
+    }
+  ],
+  "totalCount": 42,
+  "page": 1,
+  "pageSize": 10,
+  "totalPages": 5
+}
+```
+
 ### POST /post
 
 Creates a new blog post.

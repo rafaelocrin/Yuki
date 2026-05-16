@@ -22,6 +22,24 @@ public sealed class PostReadRepository : IPostReadRepository
         return await query.FirstOrDefaultAsync(p => p.Id == postId, ct);
     }
 
+    public async Task<(IReadOnlyList<PostReadModel> Items, int TotalCount)> GetPagedAsync(
+        int page, int pageSize, bool includeAuthor, CancellationToken ct = default)
+    {
+        IQueryable<PostReadModel> baseQuery = includeAuthor
+            ? _context.Posts.Include(p => p.Author)
+            : _context.Posts.AsNoTracking();
+
+        var totalCount = await baseQuery.CountAsync(ct);
+        var items = await baseQuery
+            .OrderBy(p => p.CreatedAt)
+            .ThenBy(p => p.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        return (items, totalCount);
+    }
+
     public async Task UpsertAsync(PostReadModel post, CancellationToken ct = default)
     {
         var existing = await _context.Posts.FindAsync(new object[] { post.Id }, ct);

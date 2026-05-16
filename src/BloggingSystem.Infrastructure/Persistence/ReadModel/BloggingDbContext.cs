@@ -15,6 +15,8 @@ public sealed class BloggingDbContext : DbContext
         modelBuilder.Entity<PostReadModel>(entity =>
         {
             entity.HasKey(p => p.Id);
+            entity.Property(p => p.CreatedAt)
+                  .HasDefaultValueSql("NOW()");
             entity.HasOne(p => p.Author)
                   .WithMany()
                   .HasForeignKey(p => p.AuthorId)

@@ -9,7 +9,7 @@ It is the canonical reference for architecture decisions, patterns, and iteratio
 
 Yuki Backend Technical Test — a blogging REST API in C# .NET 8.
 
-**Endpoints:** `POST /post`, `GET /post/{id}?includeAuthor=true`, `POST /author`  
+**Endpoints:** `POST /post`, `GET /post?page=1&pageSize=10&includeAuthor=false`, `GET /post/{id}?includeAuthor=true`, `POST /author`  
 **Entities:** `Post` (id, author_id, title, description, content), `Author` (id, name, surname)  
 **Seeded authors:** `11111111-1111-1111-1111-111111111111` (Jane Doe), `22222222-2222-2222-2222-222222222222` (John Smith)  
 **Swagger UI:** `http://localhost:5002/swagger`
@@ -58,14 +58,14 @@ Domain → Application → Infrastructure → API
 
 ## Tests
 
-128 tests, 0 failures. Run with `dotnet test`.
+150 tests, 0 failures. Run with `dotnet test`.
 
 | Project | Count | Type |
 |---------|-------|------|
 | `BloggingSystem.Domain.Tests` | 26 | Pure unit |
-| `BloggingSystem.Application.Tests` | 36 | Unit (NSubstitute mocks + concrete validators) |
-| `BloggingSystem.Infrastructure.Tests` | 32 | Integration + DI registration |
-| `BloggingSystem.Api.Tests` | 27 | Functional (WebApplicationFactory) |
+| `BloggingSystem.Application.Tests` | 46 | Unit (NSubstitute mocks + concrete validators) |
+| `BloggingSystem.Infrastructure.Tests` | 36 | Integration + DI registration |
+| `BloggingSystem.Api.Tests` | 35 | Functional (WebApplicationFactory) |
 | `BloggingSystem.Architecture.Tests` | 7 | Architecture (NetArchTest.Rules) |
 
 **Test isolation:** `BloggingApiFactory` replaces the DbContext with a unique `Guid.NewGuid()` InMemory database per factory instance to prevent cross-test contamination.

@@ -15,7 +15,8 @@ public sealed class DatabaseMigrator : IHostedService
     {
         using var scope = _scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<BloggingDbContext>();
-        await db.Database.MigrateAsync(cancellationToken);
+        if (db.Database.IsRelational())
+            await db.Database.MigrateAsync(cancellationToken);
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;

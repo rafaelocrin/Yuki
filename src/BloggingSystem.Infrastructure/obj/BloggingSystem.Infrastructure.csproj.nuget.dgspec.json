@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\BloggingSystem.Infrastructure.csproj": {}
+    "c:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\BloggingSystem.Infrastructure.csproj": {}
   },
   "projects": {
-    "C:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj": {
+    "c:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj",
+        "projectUniqueName": "c:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj",
         "projectName": "BloggingSystem.Application",
-        "projectPath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj",
+        "projectPath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj",
         "packagesPath": "C:\\Users\\rafae\\.nuget\\packages\\",
-        "outputPath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Application\\obj\\",
+        "outputPath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Application\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\rafae\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -28,8 +28,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "C:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj": {
-                "projectPath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj"
+              "c:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj": {
+                "projectPath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj"
               }
             }
           }
@@ -82,14 +82,14 @@
         }
       }
     },
-    "C:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj": {
+    "c:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj",
+        "projectUniqueName": "c:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj",
         "projectName": "BloggingSystem.Domain",
-        "projectPath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj",
+        "projectPath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\BloggingSystem.Domain.csproj",
         "packagesPath": "C:\\Users\\rafae\\.nuget\\packages\\",
-        "outputPath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\obj\\",
+        "outputPath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Domain\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\rafae\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -142,14 +142,14 @@
         }
       }
     },
-    "C:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\BloggingSystem.Infrastructure.csproj": {
+    "c:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\BloggingSystem.Infrastructure.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\BloggingSystem.Infrastructure.csproj",
+        "projectUniqueName": "c:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\BloggingSystem.Infrastructure.csproj",
         "projectName": "BloggingSystem.Infrastructure",
-        "projectPath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\BloggingSystem.Infrastructure.csproj",
+        "projectPath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\BloggingSystem.Infrastructure.csproj",
         "packagesPath": "C:\\Users\\rafae\\.nuget\\packages\\",
-        "outputPath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\obj\\",
+        "outputPath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Infrastructure\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\rafae\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -166,8 +166,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "C:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj": {
-                "projectPath": "C:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj"
+              "c:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj": {
+                "projectPath": "c:\\Projects\\Yuki\\src\\BloggingSystem.Application\\BloggingSystem.Application.csproj"
               }
             }
           }

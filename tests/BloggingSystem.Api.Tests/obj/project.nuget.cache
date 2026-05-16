@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "7wK2Eg1PxAo=",
+  "dgSpecHash": "DyfdBRgIrO0=",
   "success": true,
-  "projectFilePath": "C:\\Projects\\Yuki\\tests\\BloggingSystem.Api.Tests\\BloggingSystem.Api.Tests.csproj",
+  "projectFilePath": "c:\\Projects\\Yuki\\tests\\BloggingSystem.Api.Tests\\BloggingSystem.Api.Tests.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\rafae\\.nuget\\packages\\castle.core\\5.1.1\\castle.core.5.1.1.nupkg.sha512",
     "C:\\Users\\rafae\\.nuget\\packages\\coverlet.collector\\6.0.0\\coverlet.collector.6.0.0.nupkg.sha512",

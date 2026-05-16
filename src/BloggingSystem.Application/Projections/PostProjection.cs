@@ -30,7 +30,8 @@ public sealed class PostProjection
             AuthorId = @event.AuthorId,
             Title = @event.Title,
             Description = @event.Description,
-            Content = @event.Content
+            Content = @event.Content,
+            CreatedAt = @event.OccurredOn
         };
         return _postRepository.UpsertAsync(readModel, ct);
     }
