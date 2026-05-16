@@ -62,17 +62,17 @@ Domain → Application → Infrastructure → API
 
 ## Tests
 
-156 tests, 0 failures. Run with `dotnet test`.
+165 tests, 0 failures. Run with `dotnet test`.
 
 | Project | Count | Type |
 |---------|-------|------|
 | `BloggingSystem.Domain.Tests` | 26 | Pure unit |
 | `BloggingSystem.Application.Tests` | 48 | Unit (NSubstitute mocks + concrete validators) |
 | `BloggingSystem.Infrastructure.Tests` | 36 | Integration + DI registration |
-| `BloggingSystem.Api.Tests` | 39 | Functional (WebApplicationFactory) |
+| `BloggingSystem.Api.Tests` | 48 | Functional (WebApplicationFactory) |
 | `BloggingSystem.Architecture.Tests` | 7 | Architecture (NetArchTest.Rules) |
 
-**Test isolation:** `BloggingApiFactory` replaces the DbContext with a unique `Guid.NewGuid()` InMemory database per factory instance, overrides `IEventStore` to InMemory, and clears health check registrations so tests never touch PostgreSQL.
+**Test isolation:** `BloggingApiFactory` replaces the DbContext with a unique `Guid.NewGuid()` InMemory database per factory instance, overrides `IEventStore` to InMemory, clears health check registrations, and replaces JWT bearer with `TestAuthHandler` (always authenticated) so tests never touch PostgreSQL or need real tokens. `AnonymousBloggingApiFactory` keeps real JWT bearer for auth-specific 401 tests.
 
 **Coverage target:** >90%. Run `dotnet test --collect:"XPlat Code Coverage"` to measure.
 
@@ -189,7 +189,7 @@ src/
 
 ```bash
 dotnet build                                         # build solution
-dotnet test                                          # run all 156 tests
+dotnet test                                          # run all 165 tests
 dotnet test --collect:"XPlat Code Coverage"          # with coverage
 dotnet run --project src/BloggingSystem.Api          # run locally (port 5002)
 docker compose up --build                            # run in Docker (port 8080)
@@ -209,4 +209,4 @@ docker compose up --build                            # run in Docker (port 8080)
 - All new infrastructure implementations must register via `InfrastructureServiceExtensions.AddInfrastructure()`.
 - New endpoints must chain `.WithName()`, `.WithTags("Posts")`, `.Produces<T>()` for Swagger completeness.
 - New tests must follow the existing pattern: unit tests mock ports via NSubstitute; functional tests use `BloggingApiFactory`.
-- Do not skip `dotnet test` after changes — all 150 tests must remain green.
+- Do not skip `dotnet test` after changes — all 165 tests must remain green.

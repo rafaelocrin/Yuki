@@ -22,7 +22,9 @@ public static class CreatePostEndpoint
             .Accepts<CreatePostRequest>("application/json")
             .Produces<CreatePostResponse>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .RequireAuthorization();
     }
 
     private static async Task<IResult> HandleAsync(HttpRequest request, IMediator mediator)

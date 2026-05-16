@@ -18,7 +18,9 @@ public static class CreateAuthorEndpoint
             .WithDescription("Creates a new author with a name and surname.")
             .Accepts<CreateAuthorRequest>("application/json")
             .Produces<CreateAuthorResponse>(StatusCodes.Status201Created)
-            .ProducesProblem(StatusCodes.Status400BadRequest);
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .RequireAuthorization();
     }
 
     private static async Task<IResult> HandleAsync(HttpRequest request, IMediator mediator)
