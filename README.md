@@ -62,32 +62,56 @@ tests/
 
 ## Prerequisites
 
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8)
-- Docker Desktop *(optional, for containerised run)*
-- PostgreSQL *(optional — only required when `EventStore:Provider` is `marten`)*
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8) — required for all run and test paths
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) *(optional — for the containerised run path)*
+- [PostgreSQL 15+](https://www.postgresql.org/download/) *(optional — only required when switching `EventStore:Provider` to `marten`)*
 
-## Running Locally
+## Getting Started
+
+**1. Clone the repository**
 
 ```bash
-cd src/BloggingSystem.Api
-dotnet run
+git clone <repo-url>
+cd Yuki
 ```
 
-API is available at `http://localhost:5000` (or check console output for the port).
+**2. Restore NuGet packages**
 
-**Swagger UI:** `http://localhost:5002/swagger`
+```bash
+dotnet restore
+```
+
+**3. Build**
+
+```bash
+dotnet build
+```
+
+**4. Run**
+
+```bash
+dotnet run --project src/BloggingSystem.Api
+```
+
+API is available at `http://localhost:5002`. Swagger UI: `http://localhost:5002/swagger`.
+
+> The default configuration uses an **in-memory event store and in-memory database** — no external services are required.
 
 ## Running with Docker
 
+Install [Docker Desktop](https://www.docker.com/products/docker-desktop/), then:
+
 ```bash
+docker pull mcr.microsoft.com/dotnet/sdk:8.0
+docker pull mcr.microsoft.com/dotnet/aspnet:8.0
 docker compose up --build
 ```
 
-API is available at `http://localhost:8080`.
-
-**Swagger UI:** `http://localhost:8080/swagger`
+API is available at `http://localhost:8080`. Swagger UI: `http://localhost:8080/swagger`.
 
 ## Running Tests
+
+All tests run against in-memory infrastructure by default — no external services needed.
 
 ```bash
 dotnet test
@@ -107,6 +131,40 @@ reportgenerator -reports:"tests/**/TestResults/**/coverage.cobertura.xml" -targe
 ```
 
 Then open `coveragereport/index.html`.
+
+## Optional: PostgreSQL Setup (Marten event store)
+
+To switch from the in-memory event store to PostgreSQL via Marten:
+
+**1. Install PostgreSQL**
+
+- Windows/macOS: download the installer from [postgresql.org/download](https://www.postgresql.org/download/)
+- Linux (Debian/Ubuntu): `sudo apt install postgresql`
+- Docker: `docker run -d -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:18`
+
+**2. Create the database**
+
+Connect as the `postgres` superuser and run:
+docker exec -it <container_name> psql -U postgres
+
+```sql
+CREATE DATABASE blogging;
+```
+
+Marten will create its own schema tables automatically on first run.
+
+**3. Update `appsettings.json`**
+
+```json
+{
+  "EventStore": { "Provider": "marten" },
+  "ConnectionStrings": {
+    "PostgreSQL": "Host=localhost;Port=5432;Database=blogging;Username=postgres;Password=postgres"
+  }
+}
+```
+
+Adjust `Username` and `Password` to match your PostgreSQL installation. The application will throw an `InvalidOperationException` at startup if `ConnectionStrings:PostgreSQL` is missing when `Provider` is `marten`.
 
 ## Seeded Authors
 
