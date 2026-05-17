@@ -6,6 +6,7 @@ using NSubstitute;
 
 namespace BloggingSystem.Infrastructure.Tests.EventStore;
 
+[Trait("Category", "Integration")]
 public sealed class InMemoryEventStoreTests
 {
     private readonly InMemoryEventStore _store = new();

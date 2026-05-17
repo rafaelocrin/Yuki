@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BloggingSystem.Infrastructure.Tests.ReadModel;
 
+[Trait("Category", "Integration")]
 public sealed class AuthorReadRepositoryTests : IDisposable
 {
     private readonly AuthorsDbContext _context;

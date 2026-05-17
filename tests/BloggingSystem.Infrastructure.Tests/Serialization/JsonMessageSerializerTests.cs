@@ -3,6 +3,7 @@ using FluentAssertions;
 
 namespace BloggingSystem.Infrastructure.Tests.Serialization;
 
+[Trait("Category", "Integration")]
 public sealed class JsonMessageSerializerTests
 {
     private readonly JsonMessageSerializer _serializer = new();

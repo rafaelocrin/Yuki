@@ -7,6 +7,7 @@ using FluentAssertions;
 
 namespace BloggingSystem.Api.Tests.Endpoints;
 
+[Trait("Category", "Functional")]
 public sealed class AuthEndpointTests : IClassFixture<AnonymousBloggingApiFactory>
 {
     private readonly HttpClient _client;

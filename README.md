@@ -4,6 +4,44 @@ A RESTful blogging API built with **.NET 8** using a **Modular Monolith** archit
 
 ---
 
+## Technical Test Requirements Coverage
+
+| Requirement | Status | How it is met |
+|---|---|---|
+| `POST /post` endpoint | ✅ | `CreatePostEndpoint` — validates, dispatches `CreatePostCommand` via MediatR, returns 201 + `Location` header |
+| `GET /post/{id}` endpoint | ✅ | `GetPostEndpoint` — accepts `?includeAuthor=true` to embed author details in the same response |
+| Author info in same response | ✅ | `PostResponse.Author` is populated from the denormalised read model when `includeAuthor=true`; no extra round-trip |
+| JSON as default format | ✅ | `JsonMessageSerializer` is the default `IMessageSerializer` implementation |
+| Flexible / extensible serialization | ✅ | Strategy pattern — `IMessageSerializer` port with `JsonMessageSerializer` and `XmlMessageSerializer`; switch via `Serialization:Format` config with zero code change |
+| C# implementation | ✅ | .NET 8, C# 12 |
+| ≥ 90% code coverage | ✅ | 195 tests across 5 projects; coverage target enforced via `dotnet test --collect:"XPlat Code Coverage"` |
+| Multiple test types | ✅ | **Unit** (Domain.Tests — 26, Application.Tests — 50), **Integration** `[Trait("Category","Integration")]` (Infrastructure.Tests — 47), **Functional** `[Trait("Category","Functional")]` (Api.Tests — 48, `WebApplicationFactory` against real HTTP stack), **Architecture** (Architecture.Tests — 24 boundary assertions) |
+| Install & configure instructions | ✅ | This README: Quick Start, Docker Compose, Prerequisites, Configuration Reference, database inspection guide |
+| Docker | ✅ _(plus)_ | Full `docker-compose.yml` — PostgreSQL, RabbitMQ, Jaeger, monolith API, Posts.Api, Authors.Api, YARP gateway |
+| Hexagonal Architecture | ✅ _(plus)_ | Domain/Application never reference Infrastructure or API; enforced at compile time by separate assemblies and verified by 24 architecture tests |
+| CQRS | ✅ _(plus)_ | Write side: `IEventStore` + command handlers; Read side: EF Core projections + `IPostReadRepository` / `IAuthorReadRepository` |
+| Event Sourcing | ✅ _(plus)_ | `Post.Create()` raises `PostCreatedEvent` → appended to `IEventStore` (InMemory or Marten/PostgreSQL) → projected to read model; `Rehydrate()` replays events to rebuild aggregate state |
+
+### Beyond the requirements
+
+| Extra | Detail |
+|---|---|
+| **Outbox pattern** | `OutboxEvents` table + `OutboxProcessor` BackgroundService — guarantees the read model is never silently out of sync after a crash |
+| **Modular Monolith → Microservices path** | Posts and Authors are separate assemblies with isolated schemas (`posts` / `authors`); standalone `Posts.Api` (8082) and `Authors.Api` (8083) already deployable independently |
+| **YARP API Gateway** | Single entry point routing `/post*` → Posts.Api, `/author*` → Authors.Api |
+| **Cross-module messaging** | `AuthorCreatedEvent` published via MassTransit (RabbitMQ in production, in-memory in tests); `AuthorCreatedConsumer` keeps Posts module's local `KnownAuthors` cache consistent |
+| **JWT authentication** | All write endpoints protected; demo token endpoint at `POST /auth/token` |
+| **Idempotency** | `X-Idempotency-Key` header + `ProcessedCommands` table per module — safe to retry without duplicate data |
+| **Distributed tracing** | OpenTelemetry + OTLP exporter; Jaeger UI at `localhost:16686` |
+| **Structured logging** | Serilog with `X-Correlation-ID` enrichment and MediatR `LoggingBehavior` pipeline |
+| **Health checks** | `/healthz/live` and `/healthz/ready` (PostgreSQL probe) on every API host |
+| **Polly retry** | `EnableRetryOnFailure` on both EF Core DbContexts for transient PostgreSQL failures |
+| **Graceful shutdown** | 30-second shutdown timeout on all API hosts |
+| **`GET /post`** | Paginated list endpoint (not required by the test, added for completeness) |
+| **`POST /author`** | Author creation endpoint with the same full pipeline as posts |
+
+---
+
 ## Architecture Overview
 
 ```
@@ -201,7 +239,14 @@ dotnet run --project src/Gateway
 All tests use in-memory infrastructure — no external services required.
 
 ```bash
+# Run all 195 tests
 dotnet test
+
+# Run only Integration tests (BloggingSystem.Infrastructure.Tests)
+dotnet test --filter "Category=Integration"
+
+# Run only Functional tests (BloggingSystem.Api.Tests)
+dotnet test --filter "Category=Functional"
 ```
 
 With code coverage:

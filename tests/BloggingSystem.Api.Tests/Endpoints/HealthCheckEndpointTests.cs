@@ -5,6 +5,7 @@ using FluentAssertions;
 
 namespace BloggingSystem.Api.Tests.Endpoints;
 
+[Trait("Category", "Functional")]
 public sealed class HealthCheckEndpointTests : IClassFixture<BloggingApiFactory>
 {
     private readonly HttpClient _client;

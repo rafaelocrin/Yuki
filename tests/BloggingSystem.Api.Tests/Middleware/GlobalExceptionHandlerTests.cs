@@ -8,6 +8,7 @@ using FluentAssertions;
 
 namespace BloggingSystem.Api.Tests.Middleware;
 
+[Trait("Category", "Functional")]
 public sealed class GlobalExceptionHandlerTests : IClassFixture<BloggingApiFactory>
 {
     private readonly HttpClient _client;

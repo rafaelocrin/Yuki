@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BloggingSystem.Infrastructure.Tests.Outbox;
 
+[Trait("Category", "Integration")]
 public sealed class EfCoreOutboxWriterTests : IDisposable
 {
     private readonly PostsDbContext _context;

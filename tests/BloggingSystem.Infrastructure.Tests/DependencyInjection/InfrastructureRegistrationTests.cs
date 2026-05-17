@@ -15,6 +15,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace BloggingSystem.Infrastructure.Tests.DependencyInjection;
 
+[Trait("Category", "Integration")]
 public sealed class InfrastructureRegistrationTests
 {
     private static IConfiguration BuildConfig(params (string key, string value)[] entries) =>

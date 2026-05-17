@@ -16,6 +16,7 @@ using NSubstitute;
 
 namespace BloggingSystem.Infrastructure.Tests.Outbox;
 
+[Trait("Category", "Integration")]
 public sealed class OutboxProcessorTests : IDisposable
 {
     private readonly PostsDbContext _context;

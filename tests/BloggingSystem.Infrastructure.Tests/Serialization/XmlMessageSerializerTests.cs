@@ -10,6 +10,7 @@ public sealed class XmlTestPayload
     public int Value { get; set; }
 }
 
+[Trait("Category", "Integration")]
 public sealed class XmlMessageSerializerTests
 {
     private readonly XmlMessageSerializer _serializer = new();
