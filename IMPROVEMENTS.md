@@ -8,13 +8,13 @@ Pending improvements for the Yuki Blogging System, organised by production-readi
 
 ### Tier 1 — Must have before any production traffic
 
-**1. Observability: Health checks + Structured logging**
+**1. Observability: Health checks + Structured logging** ✅
 The single highest-leverage pair. Without them you are completely blind in production — no way to detect failures, diagnose errors, or even know if the pod is healthy enough to receive traffic. Health checks take ~2 hours; Serilog structured logging half a day. They unlock the ability to debug everything else on this list.
 
-**2. Auth**
+**2. Auth** ✅
 `POST /post` and `POST /author` are completely open. Any anonymous client can write data. This is the first thing any security review flags and is a blocker for production deployment.
 
-**3. Outbox pattern**
+**3. Outbox pattern** ✅
 There is a real correctness bug right now: if the process crashes between `AppendEventsAsync` and `ProjectAsync`, the event store has the event but the read model does not. The read model silently drifts from the event log. This is not hypothetical — any restart loses in-flight projections. Fix this before you have real users.
 
 ---
@@ -41,13 +41,13 @@ The current `Posts` and `Authors` concerns share a `BloggingDbContext`, share `I
 
 ### Suggested implementation order
 
-| Step | Item | Estimated effort |
-|------|------|-----------------|
-| 1 | Health checks + Structured logging | 1 day |
-| 2 | Auth (JWT bearer) | 2–3 days |
-| 3 | Outbox pattern | 1–2 days |
-| 4 | Retry / circuit-breaker | half a day |
-| 5 | Modular monolith | 2–3 days |
+| Step | Item | Estimated effort | Status |
+|------|------|-----------------|--------|
+| 1 | Health checks + Structured logging | 1 day | ✅ Done |
+| 2 | Auth (JWT bearer) | 2–3 days | ✅ Done |
+| 3 | Outbox pattern | 1–2 days | ✅ Done |
+| 4 | Retry / circuit-breaker | half a day | Pending |
+| 5 | Modular monolith | 2–3 days | ✅ Done |
 
 The first three together turn this from a well-engineered prototype into something that can run in production under scrutiny.
 
@@ -57,16 +57,16 @@ The first three together turn this from a well-engineered prototype into somethi
 
 ### Security
 
-1. **Auth** — Add JWT bearer authentication; scope `POST /post` and `POST /author` to authenticated users. Consider an `ICurrentUserService` port so domain logic stays auth-agnostic.
+1. ~~**Auth**~~ ✅ JWT bearer authentication added; `POST /post` and `POST /author` require a valid token. `AnonymousBloggingApiFactory` exercises 401 paths in functional tests.
 2. **Input sanitisation** — Strip or reject HTML/script content in `title`, `description`, and `content` fields to prevent stored-XSS if output is ever rendered in a browser.
 3. **Rate limiting** — Apply ASP.NET Core's built-in rate limiter (`AddRateLimiter`) to write endpoints to prevent abuse.
 4. **Secret management** — Move the `ConnectionStrings:PostgreSQL` value out of `appsettings.json` into environment variables or a secrets manager (Azure Key Vault, AWS Secrets Manager) before shipping to production.
 
 ### Observability
 
-5. **Structured logging** — Replace plain `ILogger` calls with Serilog or OpenTelemetry-backed structured logging; emit `postId`, `authorId`, `correlationId` on every request.
+5. ~~**Structured logging**~~ ✅ Serilog structured logging with `CorrelationId` enrichment via `X-Correlation-ID` header and `LoggingBehavior` MediatR pipeline. Config-driven minimum levels.
 6. **Distributed tracing** — Wire `OpenTelemetry.Extensions.Hosting` with OTLP exporter so spans are visible in Jaeger/Tempo; instrument MediatR pipeline and EF Core queries.
-7. **Health checks** — Register `AddHealthChecks()` with probes for PostgreSQL (`AddNpgsql`) and Marten; expose `/healthz/live` and `/healthz/ready` for container orchestrators.
+7. ~~**Health checks**~~ ✅ `/healthz/live` (liveness, no checks) and `/healthz/ready` (readiness, PostgreSQL probe tagged "ready") exposed with JSON response writer.
 8. **Metrics** — Expose Prometheus-compatible metrics (`/metrics`) via `prometheus-net.AspNetCore`; track request latency, command throughput, and projection lag.
 9. **OpenAPI XML comments** — Enable `<GenerateDocumentationFile>true</GenerateDocumentationFile>` in the API project and wire XML docs into `AddSwaggerGen` for richer Swagger descriptions.
 
@@ -74,7 +74,7 @@ The first three together turn this from a well-engineered prototype into somethi
 
 10. **Retry / circuit-breaker** — Wrap PostgreSQL calls (EF Core + Marten) with Polly retry and circuit-breaker policies to handle transient failures.
 11. **Idempotent command handling** — Add an `IdempotencyKey` header; store processed command IDs to make `POST /post` and `POST /author` safe to retry without duplicate data.
-12. **Outbox pattern** — Move event appending + projection into a transactional outbox so a process crash between `AppendEventsAsync` and `ProjectAsync` cannot leave the read model stale.
+12. ~~**Outbox pattern**~~ ✅ `OutboxEvent` table + `EfCoreOutboxWriter` + `OutboxProcessor` (BackgroundService). Events written to outbox before inline projection; on restart the processor re-projects any pending entries, closing the crash-between-append-and-project window.
 
 ### Scalability & Performance
 
@@ -114,11 +114,11 @@ src/
 
 **Key steps:**
 
-19. **Define module public contracts** — Each module exposes only its command/query records and response DTOs as its public API. Domain aggregates and read models are internal (`internal sealed class`).
-20. **Schema isolation** — Give each module its own EF Core `DbContext` with a dedicated PostgreSQL schema (`posts` and `authors`). Remove the shared `BloggingDbContext` that crosses module boundaries.
-21. **In-process integration events** — Replace `PostProjection` calling `IAuthorReadRepository` directly with a MediatR `INotificationHandler<AuthorCreatedEvent>` inside the Posts module, so modules communicate via events rather than direct port calls.
-22. **Per-module DI registration** — Replace the single `AddInfrastructure()` call with `services.AddPostsModule(config)` and `services.AddAuthorsModule(config)`, each internally registering their own repositories, projections, and validators.
-23. **Per-module Architecture tests** — Extend `LayerDependencyTests` to assert that `Posts.*` assemblies never reference `Authors.*` assemblies (and vice versa), enforcing the module boundary at compile time.
+19. ~~**Define module public contracts**~~ ✅ 10-project modular structure in place. `Posts.*` and `Authors.*` are separate assemblies; cross-module code does not compile.
+20. ~~**Schema isolation**~~ ✅ `PostsDbContext` owns schema `posts`; `AuthorsDbContext` owns schema `authors`. Shared `BloggingDbContext` removed.
+21. ~~**In-process integration events**~~ ✅ `OnAuthorCreated` handler (INotificationHandler) in Posts module populates local `KnownAuthors` table from `AuthorCreatedEvent` published by Authors module.
+22. ~~**Per-module DI registration**~~ ✅ `AddPostsModule()`, `AddAuthorsModule()`, `AddSharedInfrastructure()` replace the old single `AddInfrastructure()`.
+23. ~~**Per-module Architecture tests**~~ ✅ 23 assembly-level assertions in `LayerDependencyTests` verify no cross-module project references (includes `Authors.Contracts` boundary test).
 24. **Feature flags per module** — Once modules are self-contained, each can be toggled or deployed independently, enabling a low-risk path toward extracting a module into a microservice when load demands it.
 
 > **Why this matters across all other dimensions:** Schema isolation removes shared-table write contention that limits scalability; module boundaries make it safe to apply different retry/cache policies per domain; independent `DbContext` per module allows schema migrations to be scoped and rolled back without affecting other modules.
