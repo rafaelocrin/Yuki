@@ -1,6 +1,16 @@
-version: '3.8'
-
 services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
   postgres:
     image: postgres:18
     environment:
@@ -27,6 +37,88 @@ services:
       - EventStore__Provider=marten
       - ReadModel__Provider=postgresql
       - ConnectionStrings__PostgreSQL=Host=postgres;Port=5432;Database=blogging;Username=postgres;Password=postgres
+      - MessageBus__Transport=rabbitmq
+      - MessageBus__RabbitMQ__Host=rabbitmq
+      - MessageBus__RabbitMQ__Username=guest
+      - MessageBus__RabbitMQ__Password=guest
+      - OpenTelemetry__OtlpEndpoint=http://jaeger:4317
     depends_on:
       postgres:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+
+  gateway:
+    build:
+      context: .
+      dockerfile: src/Gateway/Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8081
+      - ReverseProxy__Clusters__posts-cluster__Destinations__posts-api__Address=http://posts-api:8082
+      - ReverseProxy__Clusters__authors-cluster__Destinations__authors-api__Address=http://authors-api:8083
+    depends_on:
+      - posts-api
+      - authors-api
+
+  posts-api:
+    build:
+      context: .
+      dockerfile: src/Modules/Posts/Posts.Api/Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8082
+      - EventStore__Provider=marten
+      - ReadModel__Provider=postgresql
+      - ConnectionStrings__PostgreSQL=Host=postgres;Port=5432;Database=blogging;Username=postgres;Password=postgres
+      - MessageBus__Transport=rabbitmq
+      - MessageBus__RabbitMQ__Host=rabbitmq
+      - MessageBus__RabbitMQ__Username=guest
+      - MessageBus__RabbitMQ__Password=guest
+      - OpenTelemetry__OtlpEndpoint=http://jaeger:4317
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+
+  authors-api:
+    build:
+      context: .
+      dockerfile: src/Modules/Authors/Authors.Api/Dockerfile
+    ports:
+      - "8083:8083"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8083
+      - EventStore__Provider=marten
+      - ReadModel__Provider=postgresql
+      - ConnectionStrings__PostgreSQL=Host=postgres;Port=5432;Database=blogging;Username=postgres;Password=postgres
+      - MessageBus__Transport=rabbitmq
+      - MessageBus__RabbitMQ__Host=rabbitmq
+      - MessageBus__RabbitMQ__Username=guest
+      - MessageBus__RabbitMQ__Password=guest
+      - OpenTelemetry__OtlpEndpoint=http://jaeger:4317
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      jaeger:
+        condition: service_started

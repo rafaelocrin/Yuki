@@ -1,0 +1,64 @@
+sequenceDiagram
+    actor Client
+
+    participant API as BloggingSystem.Api<br/>(MediatR Pipeline)
+    participant AuthHandler as CreateAuthorCommandHandler
+    participant PostHandler as CreatePostCommandHandler
+    participant QueryHandler as GetPostByIdQueryHandler
+    participant ES as IEventStore<br/>(InMemory / Marten)
+    participant AuthorsDB as authors schema<br/>(PostgreSQL)
+    participant RabbitMQ as RabbitMQ
+    participant Consumer as AuthorCreatedConsumer<br/>(Posts.Infrastructure)
+    participant PostsDB as posts schema<br/>(PostgreSQL)
+    participant OutboxProc as OutboxProcessor<br/>(BackgroundService)
+
+    %% ─── Phase 1: Create Author ───────────────────────────────────────────────
+    Note over Client,PostsDB: Phase 1 — POST /author  (seeds KnownAuthors via RabbitMQ)
+
+    Client->>API: POST /author<br/>{"name":"Alice","surname":"Smith"}<br/>Authorization: Bearer <token>
+    API->>API: ValidationBehavior — validate fields
+    API->>AuthHandler: CreateAuthorCommand
+    AuthHandler->>AuthHandler: Author.Create() → raises AuthorCreatedEvent
+    AuthHandler->>ES: AppendEventsAsync(authorId, [AuthorCreatedEvent])
+    AuthHandler->>AuthorsDB: AuthorProjection.ProjectAsync()<br/>UPSERT authors.Authors
+    AuthHandler->>RabbitMQ: IIntegrationEventPublisher.PublishAsync(AuthorCreatedEvent)<br/>(via MassTransit)
+    API-->>Client: 201 Created {"id":"<authorId>"}
+
+    RabbitMQ-->>Consumer: consume AuthorCreatedEvent
+    Consumer->>PostsDB: UPSERT posts.KnownAuthors<br/>(authorId, name, surname)
+
+    %% ─── Phase 2: Create Post ─────────────────────────────────────────────────
+    Note over Client,PostsDB: Phase 2 — POST /post  (event sourcing + outbox)
+
+    Client->>API: POST /post<br/>{authorId, title, description, content}<br/>Authorization: Bearer <token><br/>X-Idempotency-Key: req-abc-123
+    API->>API: IdempotencyBehavior — check posts.ProcessedCommands<br/>(key not found → proceed)
+    API->>API: ValidationBehavior — validate fields
+    API->>PostHandler: CreatePostCommand
+    PostHandler->>PostsDB: KnownAuthorRepository.GetByIdAsync(authorId)<br/>SELECT posts.KnownAuthors ✓
+    PostHandler->>PostHandler: Post.Create() → raises PostCreatedEvent
+    PostHandler->>ES: AppendEventsAsync(postId, [PostCreatedEvent])
+    PostHandler->>PostsDB: OutboxWriter.WriteAsync([PostCreatedEvent])<br/>INSERT posts.OutboxEvents (ProcessedAt = NULL)
+    PostHandler->>PostsDB: PostProjection.ProjectAsync()<br/>UPSERT posts.Posts (read model)
+    API->>PostsDB: IdempotencyBehavior — INSERT posts.ProcessedCommands<br/>(key, serialized result)
+    API-->>Client: 201 Created {"id":"<postId>"}
+
+    %% ─── Phase 2b: OutboxProcessor (crash recovery) ──────────────────────────
+    Note over OutboxProc,PostsDB: Phase 2b — OutboxProcessor polls every 5 s (crash recovery only)
+
+    loop every 5 seconds
+        OutboxProc->>PostsDB: SELECT posts.OutboxEvents WHERE ProcessedAt IS NULL
+        alt pending entries found (e.g. crash between write and project)
+            OutboxProc->>PostsDB: PostProjection.ProjectAsync() — re-project events
+            OutboxProc->>PostsDB: UPDATE OutboxEvents SET ProcessedAt = now
+        end
+    end
+
+    %% ─── Phase 3: Query Post ──────────────────────────────────────────────────
+    Note over Client,PostsDB: Phase 3 — GET /post/{id}  (read model query)
+
+    Client->>API: GET /post/<postId>?includeAuthor=true
+    API->>QueryHandler: GetPostByIdQuery(postId, includeAuthor=true)
+    QueryHandler->>PostsDB: PostReadRepository.GetByIdAsync(postId)<br/>SELECT posts.Posts (denormalised, includes AuthorName)
+    PostsDB-->>QueryHandler: PostReadModel
+    QueryHandler-->>API: PostDto {id, title, content, author:{name, surname}}
+    API-->>Client: 200 OK<br/>{id, authorId, title, description, content,<br/> author:{id, name, surname}}

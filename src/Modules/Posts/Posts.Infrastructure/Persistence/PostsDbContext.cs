@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Posts.Application.ReadModels;
+using Posts.Infrastructure.Idempotency;
 using Posts.Infrastructure.Outbox;
 
 namespace Posts.Infrastructure.Persistence;
@@ -11,6 +12,7 @@ internal sealed class PostsDbContext : DbContext
     public DbSet<PostReadModel> Posts => Set<PostReadModel>();
     public DbSet<KnownAuthorReadModel> KnownAuthors => Set<KnownAuthorReadModel>();
     public DbSet<OutboxEvent> OutboxEvents => Set<OutboxEvent>();
+    public DbSet<ProcessedCommand> ProcessedCommands => Set<ProcessedCommand>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -38,6 +40,13 @@ internal sealed class PostsDbContext : DbContext
             entity.Property(o => o.ProcessedAt).IsRequired(false);
             entity.HasIndex(o => o.ProcessedAt).HasFilter("\"ProcessedAt\" IS NULL");
             entity.ToTable("OutboxEvents");
+        });
+
+        modelBuilder.Entity<ProcessedCommand>(entity =>
+        {
+            entity.HasKey(p => p.IdempotencyKey);
+            entity.Property(p => p.SerializedResult).IsRequired();
+            entity.ToTable("ProcessedCommands");
         });
     }
 }

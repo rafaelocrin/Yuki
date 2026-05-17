@@ -1,9 +1,9 @@
 using Authors.Application.Ports;
 using Authors.Application.ReadModels;
 using Authors.Contracts;
-using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Shared.Application.Ports;
 
 namespace Authors.Infrastructure.Seeding;
 
@@ -31,7 +31,7 @@ internal sealed class AuthorSeeder : IHostedService
     {
         using var scope = _scopeFactory.CreateScope();
         var authorRepo = scope.ServiceProvider.GetRequiredService<IAuthorReadRepository>();
-        var publisher = scope.ServiceProvider.GetRequiredService<IPublisher>();
+        var publisher  = scope.ServiceProvider.GetRequiredService<IIntegrationEventPublisher>();
 
         var existing = await authorRepo.GetByIdAsync(authorId, ct);
         if (existing is not null)
@@ -40,8 +40,7 @@ internal sealed class AuthorSeeder : IHostedService
         var readModel = new AuthorReadModel { Id = authorId, Name = name, Surname = surname };
         await authorRepo.UpsertAsync(readModel, ct);
 
-        // Publish so cross-module handlers (OnAuthorCreated in Posts) can react
-        await publisher.Publish(new AuthorCreatedEvent(
+        await publisher.PublishAsync(new AuthorCreatedEvent(
             Guid.NewGuid(),
             DateTime.UtcNow,
             new AuthorId(authorId),

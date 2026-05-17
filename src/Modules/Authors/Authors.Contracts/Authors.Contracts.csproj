@@ -6,6 +6,13 @@
     <Nullable>enable</Nullable>
     <AssemblyName>Authors.Contracts</AssemblyName>
     <RootNamespace>Authors.Contracts</RootNamespace>
+    <!-- NuGet packaging — publish as Yuki.Authors.Contracts when moving to separate repos -->
+    <IsPackable>true</IsPackable>
+    <PackageId>Yuki.Authors.Contracts</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Yuki</Authors>
+    <Description>Cross-module integration event contracts for the Authors bounded context: AuthorId value object and AuthorCreatedEvent. Depends only on Yuki.Shared.Domain.</Description>
+    <PackageTags>ddd;integration-events;contracts;authors</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

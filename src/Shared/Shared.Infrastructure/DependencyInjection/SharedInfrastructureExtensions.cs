@@ -1,6 +1,8 @@
+using MassTransit;
 using Shared.Application.Ports;
 using Shared.Domain.Events;
 using Shared.Infrastructure.EventStore;
+using Shared.Infrastructure.Messaging;
 using Shared.Infrastructure.Serialization;
 using Shared.Infrastructure.Time;
 using Marten;
@@ -14,24 +16,62 @@ public static class SharedInfrastructureExtensions
 {
     public static IServiceCollection AddSharedInfrastructure(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        Action<IBusRegistrationConfigurator>? registerConsumers = null)
     {
         RegisterEventStore(services, configuration);
         RegisterSerializer(services, configuration);
         RegisterHealthChecks(services, configuration);
+        RegisterMessageBus(services, configuration, registerConsumers);
 
         services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
 
         return services;
     }
 
+    private static void RegisterMessageBus(
+        IServiceCollection services,
+        IConfiguration configuration,
+        Action<IBusRegistrationConfigurator>? registerConsumers)
+    {
+        var transport = configuration["MessageBus:Transport"] ?? "inmemory";
+
+        services.AddMassTransit(x =>
+        {
+            registerConsumers?.Invoke(x);
+
+            if (transport.Equals("rabbitmq", StringComparison.OrdinalIgnoreCase))
+            {
+                var host     = configuration["MessageBus:RabbitMQ:Host"]     ?? "localhost";
+                var username = configuration["MessageBus:RabbitMQ:Username"] ?? "guest";
+                var password = configuration["MessageBus:RabbitMQ:Password"] ?? "guest";
+
+                x.UsingRabbitMq((ctx, cfg) =>
+                {
+                    cfg.Host(host, h =>
+                    {
+                        h.Username(username);
+                        h.Password(password);
+                    });
+                    cfg.ConfigureEndpoints(ctx);
+                });
+            }
+            else
+            {
+                x.UsingInMemory((ctx, cfg) => cfg.ConfigureEndpoints(ctx));
+            }
+        });
+
+        services.AddScoped<IIntegrationEventPublisher, MassTransitIntegrationEventPublisher>();
+    }
+
     private static void RegisterSerializer(IServiceCollection services, IConfiguration configuration)
     {
         var format = configuration["Serialization:Format"] ?? "json";
         if (format.Equals("xml", StringComparison.OrdinalIgnoreCase))
-            services.AddSingleton<IMessageSerializer, XmlMessageSerializer>();
+            services.AddSingleton<Shared.Application.Ports.IMessageSerializer, XmlMessageSerializer>();
         else
-            services.AddSingleton<IMessageSerializer, JsonMessageSerializer>();
+            services.AddSingleton<Shared.Application.Ports.IMessageSerializer, JsonMessageSerializer>();
     }
 
     private static void RegisterEventStore(IServiceCollection services, IConfiguration configuration)

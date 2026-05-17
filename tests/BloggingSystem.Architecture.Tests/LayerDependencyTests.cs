@@ -302,6 +302,23 @@ public sealed class LayerDependencyTests
                      $"Failing types: {FailingTypes(result)}");
     }
 
+    // ─── Messaging isolation ────────────────────────────────────────────────
+
+    [Fact]
+    public void ApplicationLayers_ShouldNot_DependOn_MassTransit()
+    {
+        var result = Types.InAssemblies(new[]
+        {
+            typeof(CreatePostCommand).Assembly,
+            typeof(CreateAuthorCommand).Assembly
+        })
+        .ShouldNot().HaveDependencyOn("MassTransit")
+        .GetResult();
+
+        result.IsSuccessful.Should().BeTrue(
+            because: $"Application layers must not reference MassTransit directly. Failing: {FailingTypes(result)}");
+    }
+
     // ─── Contracts isolation ─────────────────────────────────────────────────
 
     [Fact]

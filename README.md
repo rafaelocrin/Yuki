@@ -1,252 +1,388 @@
 # Yuki Blogging System
 
-A RESTful blogging API built with .NET 8, implementing Hexagonal Architecture, CQRS, and Event Sourcing.
+A RESTful blogging API built with **.NET 8** using a **Modular Monolith** architecture with a clear path to microservices extraction. Implements Hexagonal Architecture, CQRS, Event Sourcing, and the Outbox pattern.
+
+---
 
 ## Architecture Overview
 
 ```
-┌────────────────────────────────────────────────────────────────┐
-│  API Layer  (BloggingSystem.Api)                               │
-│  Minimal APIs — POST /post, GET /post/{id}, POST /author       │
-└──────────────────────┬─────────────────────────────────────────┘
-                       │ IMediator
-┌──────────────────────▼─────────────────────────────────────────┐
-│  Application Layer  (BloggingSystem.Application)               │
-│  CQRS: CreatePostCommand, CreateAuthorCommand,                 │
-│        GetPostByIdQuery                                        │
-│  Ports: IEventStore, IPostReadRepository,                      │
-│         IAuthorReadRepository, IMessageSerializer              │
-│  Projections: PostProjection, AuthorProjection                 │
-└──────────┬──────────────────────────────────────────┬──────────┘
-           │                                          │
-┌──────────▼──────────┐                   ┌──────────▼──────────┐
-│  Domain Layer        │                   │ Infrastructure      │
-│  (BloggingSystem     │                   │ (BloggingSystem     │
-│   .Domain)           │                   │  .Infrastructure)   │
-│                      │                   │                     │
-│  Aggregates:         │                   │ InMemoryEventStore  │
-│   Post, Author       │                   │ MartenEventStore *  │
-│  Domain Events       │                   │ EF Core (InMemory)  │
-│  Value Objects       │                   │ JsonSerializer      │
-│                      │                   │ XmlSerializer *     │
-│                      │                   │ DataSeeder          │
-└──────────────────────┘                   └─────────────────────┘
-                                           * config-switchable
+┌─────────────────────────────────────────────────────────────┐
+│  BloggingSystem.Api  (monolith host, port 5002 / 8080)      │
+│  Posts.Api           (standalone, port 8082)                │
+│  Authors.Api         (standalone, port 8083)                │
+│  Gateway             (YARP reverse proxy, port 8081)        │
+└─────────────────────┬────────────────────┬──────────────────┘
+                      │ MediatR            │ MassTransit
+          ┌───────────▼──────┐   ┌─────────▼──────────┐
+          │  Posts module     │   │  Authors module     │
+          │  Posts.Domain     │   │  Authors.Domain     │
+          │  Posts.Application│   │  Authors.Application│
+          │  Posts.Infrastructure  Authors.Infrastructure│
+          └───────────────────┘   └────────────────────┘
+                      │                    │
+          ┌───────────▼────────────────────▼──────────┐
+          │  Shared.*  (Domain / Application / Infra)  │
+          │  IEventStore · IOutboxWriter · Behaviors   │
+          └────────────────────────────────────────────┘
 ```
 
-**Hexagonal boundaries**: Domain has zero infrastructure dependencies. Application defines ports (interfaces); Infrastructure implements them as adapters.
+### Role of `BloggingSystem.Api`
 
-**Event Sourcing**: `CreatePostCommand` raises `PostCreatedEvent`, which is persisted to the event store and synchronously projected onto the EF Core read model.
+`BloggingSystem.Api` is the **monolith host** — it wires both modules into a single process. It exists for three reasons:
 
-**CQRS**: Write side (commands) goes through the event store; read side (queries) hits the EF Core read model projection.
+| Reason | Detail |
+|---|---|
+| **Test suite** | All 48 functional tests run against it via `WebApplicationFactory`. Both modules load together, so the full `POST /author → RabbitMQ → AuthorCreatedConsumer → POST /post` chain can be tested without Docker. |
+| **Monolith deployment** | A single deployable binary for teams not yet ready to operate multiple services. Same codebase, zero behaviour change — graduate to standalone APIs when ready. |
+| **Retirement path** | Once `Posts.Api` and `Authors.Api` have their own functional test suites, this host becomes redundant and can be deleted. That is the natural end state of the microservices migration. |
 
-**Serialization Strategy**: `IMessageSerializer` (Application port) decouples the format. Switch between `JsonMessageSerializer` and `XmlMessageSerializer` via `appsettings.json` — no Application or API code changes needed.
+### Key patterns
 
-**Event Store Strategy**: `IEventStore` (Application port) decouples the persistence backend. Switch between `InMemoryEventStore` (default, no deps) and `MartenEventStore` (PostgreSQL via Marten 7.x) via `appsettings.json` — no Application or Domain code changes needed.
+| Pattern | Implementation |
+|---|---|
+| **CQRS** | Write side via `IEventStore`; read side via EF Core projections |
+| **Event Sourcing** | `Post.Create()` → `PostCreatedEvent` → append → project |
+| **Outbox** | `OutboxEvents` table + `OutboxProcessor` BackgroundService — survives crashes |
+| **Hexagonal** | Domain/Application never reference Infrastructure or API |
+| **Strategy (Serialization)** | `json` ↔ `xml` via `Serialization:Format` config — zero code change |
+| **Strategy (Event Store)** | `inmemory` ↔ `marten` via `EventStore:Provider` config |
+| **Strategy (Message Bus)** | `inmemory` ↔ `rabbitmq` via `MessageBus:Transport` config |
+| **Idempotency** | `X-Idempotency-Key` header + `ProcessedCommands` table per module |
+| **Cross-module events** | `AuthorCreatedEvent` published via MassTransit; `AuthorCreatedConsumer` populates `KnownAuthors` table in Posts module |
+
+---
+
+## Use Case: Create Post — End-to-End Flow
+
+The diagram below shows the full journey across three phases: author creation (which seeds the cross-module `KnownAuthors` cache via RabbitMQ), post creation (event sourcing + outbox), and querying a post (read model).
+
+![Create Post — End-to-End Flow](docs/create-post-flow.png)
+
+> Source: [`docs/create-post-flow.mmd`](docs/create-post-flow.mmd)
+
+### Key observations
+
+| # | What to notice |
+|---|---|
+| 1 | **No direct module call** — Posts never queries the Authors database. It reads its own `KnownAuthors` cache, populated asynchronously by `AuthorCreatedConsumer`. |
+| 2 | **Outbox decouples write from projection** — `PostCreatedEvent` is persisted to `OutboxEvents` before the in-process projection runs. If the process crashes between those two steps, `OutboxProcessor` replays the event on restart. |
+| 3 | **Idempotency is transparent** — a duplicate `POST /post` with the same `X-Idempotency-Key` returns the cached `201` without re-executing the handler. |
+| 4 | **Read path is cheap** — `GET /post/{id}` hits only the denormalised `posts.Posts` table; no join to the Authors schema is needed even when `includeAuthor=true`. |
+| 5 | **RabbitMQ is optional** — swap `MessageBus:Transport` to `inmemory` and MassTransit delivers the event in-process; zero infrastructure changes needed for local dev or tests. |
+
+---
 
 ## Project Structure
 
 ```
 src/
-  BloggingSystem.Domain/          # Pure domain logic — no deps
-  BloggingSystem.Application/     # CQRS handlers, ports, projections
-  BloggingSystem.Infrastructure/  # EF Core, event store, JSON serializer
-  BloggingSystem.Api/             # Minimal API entry point
+  Modules/
+    Posts/
+      Posts.Domain/          # Post aggregate, PostId, PostCreatedEvent
+      Posts.Application/     # CreatePostCommand, GetPostsQuery, projections
+      Posts.Infrastructure/  # PostsDbContext (schema: posts), outbox, consumer
+      Posts.Api/             # Standalone API host — port 8082
+    Authors/
+      Authors.Contracts/     # AuthorId, AuthorCreatedEvent (cross-module contract)
+      Authors.Domain/        # Author aggregate
+      Authors.Application/   # CreateAuthorCommand, projections
+      Authors.Infrastructure/# AuthorsDbContext (schema: authors), seeder
+      Authors.Api/           # Standalone API host — port 8083
+  Shared/
+    Shared.Domain/           # IDomainEvent, DomainException
+    Shared.Application/      # Ports, MediatR behaviors, PagedResult<T>
+    Shared.Infrastructure/   # InMemoryEventStore, MartenEventStore, MassTransit wiring
+  Gateway/                   # YARP reverse proxy — port 8081
+  BloggingSystem.Api/        # Monolith host (both modules) — port 5002 / 8080
 
 tests/
-  BloggingSystem.Domain.Tests/         # Unit tests
-  BloggingSystem.Application.Tests/    # Unit tests (mocked ports)
-  BloggingSystem.Infrastructure.Tests/ # Integration tests
-  BloggingSystem.Api.Tests/            # Functional tests (WebApplicationFactory)
+  BloggingSystem.Domain.Tests/         # 26 pure unit tests
+  BloggingSystem.Application.Tests/    # 50 unit tests (NSubstitute mocks)
+  BloggingSystem.Infrastructure.Tests/ # 47 integration tests
+  BloggingSystem.Api.Tests/            # 48 functional tests (WebApplicationFactory)
+  BloggingSystem.Architecture.Tests/   # 24 architecture boundary assertions
 ```
+
+---
 
 ## Prerequisites
 
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8) — required for all run and test paths
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) *(optional — for the containerised run path)*
-- [PostgreSQL 15+](https://www.postgresql.org/download/) *(optional — only required when switching `EventStore:Provider` to `marten`)*
+| Tool | Version | Required for |
+|---|---|---|
+| [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8) | 8.x | All run / test paths |
+| [Docker Desktop](https://www.docker.com/products/docker-desktop/) | any | `docker compose` path |
+| PostgreSQL | 15+ | Only when `EventStore:Provider=marten` or `ReadModel:Provider=postgresql` |
 
-## Getting Started
+> All tests and the default `dotnet run` path use **in-memory** stores — no external services required.
 
-**1. Clone the repository**
+---
+
+## Quick Start (in-memory, no Docker)
 
 ```bash
+# 1. Clone
 git clone <repo-url>
 cd Yuki
-```
 
-**2. Restore NuGet packages**
-
-```bash
+# 2. Restore & build
 dotnet restore
+dotnet build
+
+# 3. Run the monolith host
+dotnet run --project src/BloggingSystem.Api
 ```
 
-**3. Build**
+Swagger UI: [http://localhost:5002/swagger](http://localhost:5002/swagger)
+
+**Get a token first** (all write endpoints require JWT):
 
 ```bash
-dotnet build
+curl -X POST http://localhost:5002/auth/token \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123"}'
 ```
 
-**4. Run**
+Use the returned `token` value as `Bearer <token>` in the `Authorization` header.
+
+---
+
+## Running with Docker Compose (full stack)
+
+Starts PostgreSQL, RabbitMQ, Jaeger, the monolith API, the two standalone module APIs, and the YARP gateway.
+
+```bash
+docker compose up --build
+```
+
+| Service | URL | Description |
+|---|---|---|
+| Monolith API | [http://localhost:8080/swagger](http://localhost:8080/swagger) | All endpoints, both modules |
+| Posts API | [http://localhost:8082/swagger](http://localhost:8082/swagger) | Posts module only |
+| Authors API | [http://localhost:8083/swagger](http://localhost:8083/swagger) | Authors module only |
+| Gateway (YARP) | http://localhost:8081 | Routes `/post*` → Posts API, `/author*` → Authors API |
+| RabbitMQ UI | [http://localhost:15672](http://localhost:15672) | guest / guest |
+| Jaeger UI | [http://localhost:16686](http://localhost:16686) | Distributed traces |
+| PostgreSQL | localhost:5433 | blogging / postgres / postgres |
+
+To run only the infrastructure services (so you can still `dotnet run` locally against real Postgres and RabbitMQ):
+
+```bash
+docker compose up postgres rabbitmq jaeger
+```
+
+Then run the API with the Development profile (which points at those containers):
 
 ```bash
 dotnet run --project src/BloggingSystem.Api
 ```
 
-API is available at `http://localhost:5002`. Swagger UI: `http://localhost:5002/swagger`.
+---
 
-> The default configuration uses an **in-memory event store and in-memory database** — no external services are required.
+## Running the Standalone Module APIs
 
-## Running with Docker
-
-Install [Docker Desktop](https://www.docker.com/products/docker-desktop/), then:
+Each module API can be started independently:
 
 ```bash
-docker pull mcr.microsoft.com/dotnet/sdk:8.0
-docker pull mcr.microsoft.com/dotnet/aspnet:8.0
-docker compose up --build
+# Posts API on port 8082
+dotnet run --project src/Modules/Posts/Posts.Api
+
+# Authors API on port 8083
+dotnet run --project src/Modules/Authors/Authors.Api
+
+# YARP gateway on port 8081 (routes to the two above)
+dotnet run --project src/Gateway
 ```
 
-API is available at `http://localhost:8080`. Swagger UI: `http://localhost:8080/swagger`.
+---
 
 ## Running Tests
 
-All tests run against in-memory infrastructure by default — no external services needed.
+All tests use in-memory infrastructure — no external services required.
 
 ```bash
 dotnet test
 ```
 
-To collect code coverage:
+With code coverage:
 
 ```bash
 dotnet test --collect:"XPlat Code Coverage"
 ```
 
-Coverage reports are written to `tests/<project>/TestResults/`. To generate an HTML report:
+Generate an HTML report:
 
 ```bash
 dotnet tool install -g dotnet-reportgenerator-globaltool
-reportgenerator -reports:"tests/**/TestResults/**/coverage.cobertura.xml" -targetdir:coveragereport -reporttypes:Html
+reportgenerator \
+  -reports:"tests/**/TestResults/**/coverage.cobertura.xml" \
+  -targetdir:coveragereport \
+  -reporttypes:Html
+# open coveragereport/index.html
 ```
 
-Then open `coveragereport/index.html`.
+---
 
-## Optional: PostgreSQL Setup (Marten event store)
+## Authentication
 
-To switch from the in-memory event store to PostgreSQL via Marten:
+All write endpoints (`POST /post`, `POST /author`) require a **JWT Bearer token**.
 
-**1. Install PostgreSQL**
+**Get a token:**
 
-- Windows/macOS: download the installer from [postgresql.org/download](https://www.postgresql.org/download/)
-- Linux (Debian/Ubuntu): `sudo apt install postgresql`
-- Docker: `docker run -d -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:18`
-
-**2. Create the database**
-
-Connect as the `postgres` superuser and run:
-docker exec -it <container_name> psql -U postgres
-
-```sql
-CREATE DATABASE blogging;
+```bash
+curl -X POST http://localhost:5002/auth/token \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123"}'
 ```
 
-Marten will create its own schema tables automatically on first run.
+Built-in demo accounts:
 
-**3. Update `appsettings.json`**
+| Username | Password |
+|---|---|
+| `admin` | `admin123` |
+| `author` | `author123` |
 
-```json
-{
-  "EventStore": { "Provider": "marten" },
-  "ConnectionStrings": {
-    "PostgreSQL": "Host=localhost;Port=5432;Database=blogging;Username=postgres;Password=postgres"
-  }
-}
+Use the token in subsequent requests:
+
+```bash
+curl -X POST http://localhost:5002/post \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"authorId":"11111111-1111-1111-1111-111111111111","title":"Hello","description":"...","content":"..."}'
 ```
 
-Adjust `Username` and `Password` to match your PostgreSQL installation. The application will throw an `InvalidOperationException` at startup if `ConnectionStrings:PostgreSQL` is missing when `Provider` is `marten`.
+---
+
+## Idempotency
+
+Write endpoints support idempotent retries. Send the same `X-Idempotency-Key` header and the second call returns the cached response without re-executing the command:
+
+```bash
+curl -X POST http://localhost:5002/post \
+  -H "Authorization: Bearer <token>" \
+  -H "X-Idempotency-Key: my-unique-request-id-123" \
+  -H "Content-Type: application/json" \
+  -d '{"authorId":"11111111-1111-1111-1111-111111111111","title":"Hello","description":"...","content":"..."}'
+```
+
+---
 
 ## Seeded Authors
 
-Two authors are created automatically on startup. Use their IDs when calling `POST /post`:
+Two authors are created automatically on startup:
 
-| Name        | ID                                     |
-|-------------|----------------------------------------|
-| Jane Doe    | `11111111-1111-1111-1111-111111111111` |
-| John Smith  | `22222222-2222-2222-2222-222222222222` |
+| Name | ID |
+|---|---|
+| Jane Doe | `11111111-1111-1111-1111-111111111111` |
+| John Smith | `22222222-2222-2222-2222-222222222222` |
 
-## Configuration
+---
 
-All switches live in `appsettings.json` (or environment-specific overrides):
+## Configuration Reference
 
-| Key | Valid values | Default | Notes |
-|-----|-------------|---------|-------|
-| `Serialization:Format` | `json`, `xml` | `json` | Switches between `JsonMessageSerializer` and `XmlMessageSerializer`. |
-| `EventStore:Provider` | `inmemory`, `marten` | `inmemory` | Switches between `InMemoryEventStore` and `MartenEventStore` (PostgreSQL). |
-| `ReadModel:Provider` | `inmemory`, `postgresql` | `inmemory` | Switches between EF Core InMemory and Npgsql (PostgreSQL). Migrations run automatically on startup. |
-| `ConnectionStrings:PostgreSQL` | Npgsql connection string | *(none)* | **Required** when `EventStore:Provider` is `marten` **or** `ReadModel:Provider` is `postgresql`. |
+All switches live in `appsettings.json` (environment overrides in `appsettings.{Environment}.json`).
 
-**Example — full PostgreSQL stack:**
+| Key | Values | Default | Notes |
+|---|---|---|---|
+| `Serialization:Format` | `json`, `xml` | `json` | Switches `IMessageSerializer` |
+| `EventStore:Provider` | `inmemory`, `marten` | `inmemory` | `marten` requires PostgreSQL |
+| `ReadModel:Provider` | `inmemory`, `postgresql` | `inmemory` | `postgresql` runs EF migrations on startup |
+| `MessageBus:Transport` | `inmemory`, `rabbitmq` | `inmemory` | `rabbitmq` requires a running broker |
+| `MessageBus:RabbitMQ:Host` | hostname | `localhost` | Used when transport is `rabbitmq` |
+| `MessageBus:RabbitMQ:Username` | string | `guest` | |
+| `MessageBus:RabbitMQ:Password` | string | `guest` | |
+| `ConnectionStrings:PostgreSQL` | Npgsql string | *(none)* | Required for `marten` or `postgresql` providers |
+| `OpenTelemetry:OtlpEndpoint` | OTLP URL | *(none)* | When set, enables tracing export (e.g. `http://localhost:4317`) |
+| `Jwt:Issuer` | string | `blogging-api` | JWT token issuer |
+| `Jwt:Audience` | string | `blogging-clients` | JWT token audience |
+| `Jwt:SecretKey` | string | *(dev key)* | Minimum 32 chars. **Change before production.** |
+| `Jwt:ExpiryMinutes` | integer | `60` | Token lifetime |
+
+**Full PostgreSQL + RabbitMQ stack:**
 
 ```json
 {
   "Serialization": { "Format": "json" },
   "EventStore": { "Provider": "marten" },
   "ReadModel": { "Provider": "postgresql" },
+  "MessageBus": {
+    "Transport": "rabbitmq",
+    "RabbitMQ": { "Host": "localhost", "Username": "guest", "Password": "guest" }
+  },
   "ConnectionStrings": {
-    "PostgreSQL": "Host=localhost;Port=5432;Database=blogging;Username=postgres;Password=postgres"
+    "PostgreSQL": "Host=localhost;Port=5433;Database=blogging;Username=postgres;Password=postgres"
   }
 }
 ```
 
+---
+
 ## API Reference
 
-### POST /author
+### POST /auth/token
 
-Creates a new author.
+Issues a JWT for use with protected endpoints.
 
-**Request body:**
+```json
+{ "username": "admin", "password": "admin123" }
+```
+
+| Status | Description |
+|---|---|
+| 200 | `{ "token": "...", "expiresAt": "..." }` |
+| 401 | Invalid credentials |
+
+---
+
+### POST /author  *(requires Bearer token)*
+
+```json
+{ "name": "Alice", "surname": "Smith" }
+```
+
+| Status | Description |
+|---|---|
+| 201 | `{ "id": "<guid>" }` · `Location: /author/<id>` |
+| 400 | Validation error |
+| 401 | Missing / invalid token |
+
+---
+
+### POST /post  *(requires Bearer token)*
 
 ```json
 {
-  "name": "Alice",
-  "surname": "Smith"
+  "authorId": "11111111-1111-1111-1111-111111111111",
+  "title": "My First Post",
+  "description": "A short summary",
+  "content": "The full body."
 }
 ```
 
-**Responses:**
-
 | Status | Description |
-|--------|-------------|
-| 201    | Created — `{ "id": "<guid>" }`, `Location: /author/<id>` |
-| 400    | Validation error (empty name or surname) |
+|---|---|
+| 201 | `{ "id": "<guid>" }` · `Location: /post/<id>` |
+| 400 | Validation error |
+| 401 | Missing / invalid token |
+| 404 | Author not found |
+
+---
 
 ### GET /post
 
 Returns a paginated list of posts ordered by creation date.
 
-**Query parameters:**
-
-| Parameter      | Type    | Default | Description                            |
-|----------------|---------|---------|----------------------------------------|
-| `page`         | integer | `1`     | Page number (1-indexed)                |
-| `pageSize`     | integer | `10`    | Items per page (1–100)                 |
-| `includeAuthor`| boolean | `false` | Embed author details in each item      |
-
-**Responses:**
-
-| Status | Description |
-|--------|-------------|
-| 200    | Paged result (see below) |
-| 400    | Invalid `page` or `pageSize` |
-
-**Example response:**
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `page` | integer | `1` | 1-indexed page number |
+| `pageSize` | integer | `10` | Items per page |
+| `includeAuthor` | boolean | `false` | Embed author details |
 
 ```json
 {
   "items": [
     {
-      "id": "a3f1c2d4-...",
+      "id": "a3f1...",
       "authorId": "11111111-...",
       "title": "My Post",
       "description": "Short summary",
@@ -261,88 +397,127 @@ Returns a paginated list of posts ordered by creation date.
 }
 ```
 
-### POST /post
-
-Creates a new blog post.
-
-**Request body:**
-
-```json
-{
-  "authorId": "11111111-1111-1111-1111-111111111111",
-  "title": "My First Post",
-  "description": "A short summary",
-  "content": "The full body of the post."
-}
-```
-
-**Responses:**
-
-| Status | Description                    |
-|--------|--------------------------------|
-| 201    | Created — `{ "id": "<guid>" }`, `Location: /post/<id>` |
-| 400    | Validation error               |
-| 404    | Author not found               |
+---
 
 ### GET /post/{id}
 
-Retrieves a post by ID.
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `includeAuthor` | boolean | `false` | Embed author details |
 
-**Query parameters:**
+| Status | Description |
+|---|---|
+| 200 | Post object |
+| 400 | Invalid GUID format |
+| 404 | Post not found |
 
-| Parameter      | Type    | Default | Description                         |
-|----------------|---------|---------|-------------------------------------|
-| `includeAuthor`| boolean | `false` | Include author details in response  |
-
-**Responses:**
-
-| Status | Description        |
-|--------|--------------------|
-| 200    | Post DTO (see below)|
-| 400    | Invalid GUID format |
-| 404    | Post not found     |
-
-**Example response (`includeAuthor=true`):**
-
-```json
-{
-  "id": "a3f1c2d4-...",
-  "authorId": "11111111-1111-1111-1111-111111111111",
-  "title": "My First Post",
-  "description": "A short summary",
-  "content": "The full body of the post.",
-  "author": {
-    "id": "11111111-1111-1111-1111-111111111111",
-    "name": "Jane",
-    "surname": "Doe"
-  }
-}
-```
+---
 
 ## Sample cURL Requests
 
 ```bash
-# Create an author
-curl -X POST http://localhost:8080/author \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Alice",
-    "surname": "Smith"
-  }'
+BASE=http://localhost:5002
 
-# Create a post (using a seeded author ID)
-curl -X POST http://localhost:8080/post \
+# 1. Get a token
+TOKEN=$(curl -s -X POST $BASE/auth/token \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123"}' | \
+  grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+
+# 2. Create a post
+curl -X POST $BASE/post \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "authorId": "11111111-1111-1111-1111-111111111111",
     "title": "Hello World",
     "description": "My first post",
-    "content": "This is the body of my post."
+    "content": "This is the body."
   }'
 
-# Get a post
-curl http://localhost:8080/post/<POST_ID>
+# 3. List posts
+curl "$BASE/post?page=1&pageSize=5&includeAuthor=true"
 
-# Get a post with author details
-curl "http://localhost:8080/post/<POST_ID>?includeAuthor=true"
+# 4. Get a single post
+curl "$BASE/post/<POST_ID>?includeAuthor=true"
+
+# 5. Create an author
+curl -X POST $BASE/author \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Alice","surname":"Smith"}'
 ```
+
+---
+
+## Inspecting the Database
+
+Each module owns its own PostgreSQL schema. When connecting via `psql`, the default search path is `public`, so unqualified table names will not resolve. Always prefix with the schema name.
+
+```bash
+docker exec -it yuki-postgres-1 psql -U postgres -d blogging
+```
+
+### Schema layout
+
+| Schema | Owner | Tables |
+|---|---|---|
+| `authors` | Authors module | `Authors`, `ProcessedCommands` |
+| `posts` | Posts module | `Posts`, `KnownAuthors`, `OutboxEvents`, `ProcessedCommands` |
+| `public` | Marten (event store) | `mt_events`, `mt_streams` |
+
+### Useful queries
+
+```sql
+-- Authors read model (EF Core projection)
+SELECT * FROM authors."Authors";
+
+-- Posts read model (EF Core projection)
+SELECT * FROM posts."Posts";
+
+-- KnownAuthors — Posts module local cache, populated via RabbitMQ consumer
+SELECT * FROM posts."KnownAuthors";
+
+-- Outbox — pending entries have ProcessedAt = NULL
+SELECT * FROM posts."OutboxEvents";
+
+-- Event store — full event log (all modules, Marten)
+SELECT stream_id, type, version FROM public.mt_streams;
+SELECT seq_id, stream_id, type, data FROM public.mt_events ORDER BY seq_id;
+```
+
+You can also set the search path for the session to avoid qualifying every table:
+
+```sql
+SET search_path TO authors, posts, public;
+SELECT * FROM "Authors";
+SELECT * FROM "Posts";
+```
+
+> **Why separate schemas?** Schema isolation is what allows the two modules to be extracted into independent services later — each service would simply point its connection string at its own database instance without changing a single line of application code.
+
+---
+
+## Health Checks
+
+Each API host exposes:
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /healthz/live` | Liveness — always 200 if the process is running |
+| `GET /healthz/ready` | Readiness — 200 when PostgreSQL is reachable (healthy tag) |
+
+---
+
+## Microservices Migration
+
+See [MICROSERVICES_MIGRATION.md](MICROSERVICES_MIGRATION.md) for the full step-by-step roadmap from modular monolith to independently deployable services. Current status:
+
+| Step | Status |
+|---|---|
+| 1 — Message broker (RabbitMQ via MassTransit) | ✅ Done |
+| 2 — Schema isolation (separate DbContexts) | ✅ Done |
+| 3 — NuGet packaging for shared contracts | ✅ Done (packaging metadata added) |
+| 4 — Separate deployables (Posts.Api / Authors.Api) | ✅ Done |
+| 5 — API gateway (YARP) | ✅ Done |
+| 6 — Distributed infrastructure (tracing, retry, idempotency, graceful shutdown) | ✅ Done |

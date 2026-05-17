@@ -16,10 +16,14 @@ using Posts.Infrastructure.DependencyInjection;
 using Serilog;
 using Shared.Application.Behaviors;
 using Shared.Application.Ports;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Shared.Infrastructure.DependencyInjection;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.Configure<HostOptions>(opts => opts.ShutdownTimeout = TimeSpan.FromSeconds(30));
 
 builder.Host.UseSerilog((ctx, cfg) =>
     cfg.ReadFrom.Configuration(ctx.Configuration)
@@ -69,6 +73,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<ICurrentRequestContext, CurrentRequestContext>();
 
 // ── Application ───────────────────────────────────────────────────────────────
 
@@ -88,10 +93,23 @@ builder.Services.AddValidatorsFromAssemblies(new[]
 
 builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
 builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(IdempotencyBehavior<,>));
+
+// ── Observability ─────────────────────────────────────────────────────────────
+
+var otlpEndpoint = builder.Configuration["OpenTelemetry:OtlpEndpoint"];
+if (!string.IsNullOrEmpty(otlpEndpoint))
+{
+    builder.Services.AddOpenTelemetry()
+        .ConfigureResource(r => r.AddService("blogging-api"))
+        .WithTracing(t => t
+            .AddAspNetCoreInstrumentation()
+            .AddOtlpExporter(o => o.Endpoint = new Uri(otlpEndpoint)));
+}
 
 // ── Infrastructure / Modules ──────────────────────────────────────────────────
 
-builder.Services.AddSharedInfrastructure(builder.Configuration);
+builder.Services.AddSharedInfrastructure(builder.Configuration, PostsModuleExtensions.AddPostsConsumers);
 builder.Services.AddPostsModule(builder.Configuration);
 builder.Services.AddAuthorsModule(builder.Configuration);
 

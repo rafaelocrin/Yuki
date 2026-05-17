@@ -4,7 +4,6 @@ using Authors.Application.Projections;
 using Shared.Application.Ports;
 using Shared.Domain.Events;
 using FluentAssertions;
-using MediatR;
 using NSubstitute;
 
 namespace BloggingSystem.Application.Tests.Handlers;
@@ -14,7 +13,7 @@ public sealed class CreateAuthorCommandHandlerTests
     private readonly IEventStore _eventStore;
     private readonly IAuthorReadRepository _authorRepo;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly IPublisher _publisher;
+    private readonly IIntegrationEventPublisher _integrationEventPublisher;
     private readonly AuthorProjection _projection;
     private readonly CreateAuthorCommandHandler _handler;
 
@@ -23,10 +22,10 @@ public sealed class CreateAuthorCommandHandlerTests
         _eventStore = Substitute.For<IEventStore>();
         _authorRepo = Substitute.For<IAuthorReadRepository>();
         _dateTimeProvider = Substitute.For<IDateTimeProvider>();
-        _publisher = Substitute.For<IPublisher>();
+        _integrationEventPublisher = Substitute.For<IIntegrationEventPublisher>();
         _dateTimeProvider.UtcNow.Returns(DateTime.UtcNow);
         _projection = new AuthorProjection(_authorRepo);
-        _handler = new CreateAuthorCommandHandler(_eventStore, _projection, _dateTimeProvider, _publisher);
+        _handler = new CreateAuthorCommandHandler(_eventStore, _projection, _dateTimeProvider, _integrationEventPublisher);
     }
 
     [Fact]

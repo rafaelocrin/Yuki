@@ -3,6 +3,7 @@ using Authors.Contracts;
 using Authors.Domain.Aggregates;
 using MediatR;
 using Shared.Application.Ports;
+using Shared.Domain.Events;
 
 namespace Authors.Application.Commands.CreateAuthor;
 
@@ -11,18 +12,18 @@ internal sealed class CreateAuthorCommandHandler : IRequestHandler<CreateAuthorC
     private readonly IEventStore _eventStore;
     private readonly AuthorProjection _projection;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly IPublisher _publisher;
+    private readonly IIntegrationEventPublisher _integrationEventPublisher;
 
     public CreateAuthorCommandHandler(
         IEventStore eventStore,
         AuthorProjection projection,
         IDateTimeProvider dateTimeProvider,
-        IPublisher publisher)
+        IIntegrationEventPublisher integrationEventPublisher)
     {
         _eventStore = eventStore;
         _projection = projection;
         _dateTimeProvider = dateTimeProvider;
-        _publisher = publisher;
+        _integrationEventPublisher = integrationEventPublisher;
     }
 
     public async Task<Guid> Handle(CreateAuthorCommand command, CancellationToken cancellationToken)
@@ -32,9 +33,8 @@ internal sealed class CreateAuthorCommandHandler : IRequestHandler<CreateAuthorC
         await _eventStore.AppendEventsAsync(author.Id, author.UncommittedEvents, cancellationToken);
         await _projection.ProjectAsync(author.UncommittedEvents, cancellationToken);
 
-        // Publish so cross-module handlers (OnAuthorCreated in Posts) can react
         foreach (var e in author.UncommittedEvents.OfType<AuthorCreatedEvent>())
-            await _publisher.Publish(e, cancellationToken);
+            await _integrationEventPublisher.PublishAsync(e, cancellationToken);
 
         author.ClearUncommittedEvents();
 

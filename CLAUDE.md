@@ -26,22 +26,22 @@ src/
     Posts/
       Posts.Domain/          # Post aggregate, PostId, PostCreatedEvent, KnownAuthorNotFoundException
       Posts.Application/     # CreatePostCommand, GetPostsQuery, IPostReadRepository, PostProjection
-      Posts.Infrastructure/  # PostsDbContext ("posts" schema), EfCoreOutboxWriter, OutboxProcessor
+      Posts.Infrastructure/  # PostsDbContext ("posts" schema), EfCoreOutboxWriter, OutboxProcessor, AuthorCreatedConsumer
     Authors/
       Authors.Contracts/     # AuthorId value object, AuthorCreatedEvent (cross-module integration contract)
       Authors.Domain/        # Author aggregate (depends on Authors.Contracts)
       Authors.Application/   # CreateAuthorCommand, IAuthorReadRepository, AuthorProjection
-      Authors.Infrastructure/# AuthorsDbContext ("authors" schema), AuthorSeeder
+      Authors.Infrastructure/# AuthorsDbContext ("authors" schema), AuthorSeeder (publishes AuthorCreatedEvent via MassTransit)
   Shared/
     Shared.Domain/           # IDomainEvent (extends INotification), DomainException only — no module types
-    Shared.Application/      # IEventStore, IOutboxWriter, IDateTimeProvider, ValidationBehavior, LoggingBehavior, PagedResult<T>
-    Shared.Infrastructure/   # InMemoryEventStore, MartenEventStore, JsonMessageSerializer, XmlMessageSerializer, AddSharedInfrastructure()
+    Shared.Application/      # IEventStore, IOutboxWriter, IDateTimeProvider, IIntegrationEventPublisher, ValidationBehavior, LoggingBehavior, PagedResult<T>
+    Shared.Infrastructure/   # InMemoryEventStore, MartenEventStore, JsonMessageSerializer, XmlMessageSerializer, MassTransitIntegrationEventPublisher, AddSharedInfrastructure()
   BloggingSystem.Api/        # Thin host — wires modules, Swagger, middleware, GlobalExceptionHandler
 ```
 
 **Dependency direction:** `Authors.Contracts` → `Shared.Domain` only; `*.Domain` → `Shared.Domain` + (Posts.Domain → `Authors.Contracts`); `*.Application` → `*.Domain` + `Shared.*` + `Authors.Contracts`; `*.Infrastructure` → `*.Application` + `Shared.Infrastructure`; `BloggingSystem.Api` → all modules (wiring only).
 
-**Cross-module communication:** `AuthorCreatedEvent` (defined in `Authors.Contracts`) is published via MediatR after an author is created. `Posts.Application.Handlers.OnAuthorCreated` (INotificationHandler) maintains a local `KnownAuthors` table in `PostsDbContext` so `CreatePostCommandHandler` can validate the author without calling `Authors.*` directly. If the author is not found locally, `KnownAuthorNotFoundException` (Posts.Domain) is thrown — not `AuthorNotFoundException` — because Posts is checking its own cache, not the Authors bounded context.
+**Cross-module communication:** `AuthorCreatedEvent` (defined in `Authors.Contracts`) is published via **MassTransit** (`IIntegrationEventPublisher` port → `MassTransitIntegrationEventPublisher` adapter) after an author is created. `Posts.Infrastructure.Consumers.AuthorCreatedConsumer` (MassTransit `IConsumer<AuthorCreatedEvent>`) maintains a local `KnownAuthors` table in `PostsDbContext` so `CreatePostCommandHandler` can validate the author without calling `Authors.*` directly. If the author is not found locally, `KnownAuthorNotFoundException` (Posts.Domain) is thrown — not `AuthorNotFoundException` — because Posts is checking its own cache, not the Authors bounded context.
 
 **Schema isolation:** `PostsDbContext` owns schema `posts` (Posts, KnownAuthors, OutboxEvents tables). `AuthorsDbContext` owns schema `authors` (Authors table).
 
@@ -66,7 +66,9 @@ src/
 | `src/Modules/Posts/Posts.Application/Commands/CreatePost/CreatePostCommandHandler.cs` | Write path |
 | `src/Modules/Posts/Posts.Application/Queries/GetPostById/GetPostByIdQueryHandler.cs` | Read path |
 | `src/Modules/Posts/Posts.Application/Projections/PostProjection.cs` | Event → read model |
-| `src/Modules/Posts/Posts.Application/Handlers/OnAuthorCreated.cs` | Cross-module: populates KnownAuthors from AuthorCreatedEvent |
+| `src/Modules/Posts/Posts.Infrastructure/Consumers/AuthorCreatedConsumer.cs` | Cross-module: MassTransit consumer that populates KnownAuthors from AuthorCreatedEvent |
+| `src/Shared/Shared.Application/Ports/IIntegrationEventPublisher.cs` | Port: publish integration events to the message bus |
+| `src/Shared/Shared.Infrastructure/Messaging/MassTransitIntegrationEventPublisher.cs` | Adapter: publishes via MassTransit IPublishEndpoint |
 | `src/Shared/Shared.Infrastructure/EventStore/InMemoryEventStore.cs` | In-memory event store |
 | `src/Shared/Shared.Infrastructure/EventStore/MartenEventStore.cs` | PostgreSQL event store (Marten) |
 | `src/Modules/Posts/Posts.Infrastructure/Persistence/PostsDbContext.cs` | Posts + KnownAuthors + OutboxEvents (schema: posts) |
@@ -90,7 +92,7 @@ src/
 
 ## Tests
 
-194 tests, 0 failures. Run with `dotnet test`.
+195 tests, 0 failures. Run with `dotnet test`.
 
 | Project | Count | Type |
 |---------|-------|------|
@@ -98,9 +100,9 @@ src/
 | `BloggingSystem.Application.Tests` | 50 | Unit (NSubstitute mocks + concrete validators) |
 | `BloggingSystem.Infrastructure.Tests` | 47 | Integration + DI registration |
 | `BloggingSystem.Api.Tests` | 48 | Functional (WebApplicationFactory) |
-| `BloggingSystem.Architecture.Tests` | 23 | Architecture (NetArchTest.Rules, 23 cross-module boundary assertions) |
+| `BloggingSystem.Architecture.Tests` | 24 | Architecture (NetArchTest.Rules, 24 cross-module boundary assertions including MassTransit guard) |
 
-**Test isolation:** `BloggingApiFactory` replaces both `PostsDbContext` and `AuthorsDbContext` with unique `Guid.NewGuid()` InMemory databases per factory instance, overrides `IEventStore` to InMemory, clears health check registrations, and replaces JWT bearer with `TestAuthHandler` (always authenticated) so tests never touch PostgreSQL or need real tokens. `AnonymousBloggingApiFactory` keeps real JWT bearer for auth-specific 401 tests.
+**Test isolation:** `BloggingApiFactory` sets environment to `"Testing"` (bypasses `appsettings.Development.json`), replaces both `PostsDbContext` and `AuthorsDbContext` with unique `Guid.NewGuid()` InMemory databases per factory instance, overrides `IEventStore` to InMemory, clears health check registrations, and replaces JWT bearer with `TestAuthHandler` (always authenticated). `appsettings.json` defaults all transports to `inmemory`, so no RabbitMQ or PostgreSQL is needed for tests. `AnonymousBloggingApiFactory` keeps real JWT bearer for auth-specific 401 tests. Both factories implement `IAsyncLifetime` and poll `IKnownAuthorRepository` for seeded authors before tests run (MassTransit in-memory delivers `AuthorCreatedEvent` asynchronously).
 
 **Coverage target:** >90%. Run `dotnet test --collect:"XPlat Code Coverage"` to measure.
 
@@ -115,6 +117,7 @@ All switches live in `appsettings.json` (or environment-specific overrides like 
 | `Serialization:Format` | `json`, `xml` | `json` | Switches `IMessageSerializer` — `JsonMessageSerializer` or `XmlMessageSerializer`. No Application/API code changes needed. |
 | `EventStore:Provider` | `inmemory`, `marten` | `inmemory` | Switches `IEventStore` — `InMemoryEventStore` (no deps) or `MartenEventStore` (PostgreSQL via Marten 7.x). No Application/Domain code changes needed. |
 | `ReadModel:Provider` | `inmemory`, `postgresql` | `inmemory` | Switches `PostsDbContext` — EF Core InMemory (no deps) or Npgsql (PostgreSQL). Migrations applied automatically on startup via `PostsDatabaseMigrator`. |
+| `MessageBus:Transport` | `inmemory`, `rabbitmq` | `inmemory` | Switches MassTransit transport. `inmemory` needs no external broker; `rabbitmq` connects via `MessageBus:RabbitMQ:Host/Username/Password`. |
 | `ConnectionStrings:PostgreSQL` | Npgsql connection string | *(none)* | **Required** when `EventStore:Provider` is `marten` **or** `ReadModel:Provider` is `postgresql`. Throws `InvalidOperationException` at startup if absent. |
 
 **Example — switch to XML + PostgreSQL (both stores):**
@@ -137,7 +140,8 @@ All switches live in `appsettings.json` (or environment-specific overrides like 
 |---------|----------|
 | Shared.Domain | MediatR 12.x (IDomainEvent extends INotification) |
 | Shared.Application | MediatR 12.x, FluentValidation 12.x, FluentValidation.DependencyInjectionExtensions 12.x, Microsoft.Extensions.Logging.Abstractions 8.x |
-| Shared.Infrastructure | EF Core InMemory 8.x, Marten 7.x, Microsoft.Extensions.Hosting.Abstractions 8.x |
+| Shared.Infrastructure | EF Core InMemory 8.x, Marten 7.x, MassTransit 8.x, MassTransit.RabbitMQ 8.x, Microsoft.Extensions.Hosting.Abstractions 8.x |
+| Posts.Infrastructure | MassTransit 8.x (consumer only) |
 | Posts.Application | MediatR 12.x, FluentValidation 12.x |
 | Posts.Infrastructure | Npgsql.EntityFrameworkCore.PostgreSQL 8.x, AspNetCore.HealthChecks.Npgsql 8.x |
 | Authors.Infrastructure | Npgsql.EntityFrameworkCore.PostgreSQL 8.x |
@@ -184,7 +188,7 @@ Remaining improvements, grouped by production-readiness dimension:
 
 ~~19. **Define module public contracts**~~ ✅ 9-project modular structure in place. `Posts.*` and `Authors.*` are separate assemblies; cross-module code does not compile.  
 ~~20. **Schema isolation**~~ ✅ `PostsDbContext` owns schema `posts`; `AuthorsDbContext` owns schema `authors`. Shared `BloggingDbContext` removed.  
-~~21. **In-process integration events**~~ ✅ `OnAuthorCreated` handler (INotificationHandler) in Posts module populates local `KnownAuthors` table from `AuthorCreatedEvent` published by Authors module.  
+~~21. **In-process → message broker integration events**~~ ✅ `AuthorCreatedEvent` published via MassTransit (`IIntegrationEventPublisher` port). `AuthorCreatedConsumer` in Posts.Infrastructure populates local `KnownAuthors` table. Transport switches between `inmemory` (tests/default) and `rabbitmq` (docker-compose/production) via config with no code changes.  
 ~~22. **Per-module DI registration**~~ ✅ `AddPostsModule()`, `AddAuthorsModule()`, `AddSharedInfrastructure()` replace the old single `AddInfrastructure()`.  
 ~~23. **Per-module Architecture tests**~~ ✅ 23 assembly-level assertions in `LayerDependencyTests` verify no cross-module project references (includes `Authors.Contracts` boundary test).  
 24. **Feature flags per module** — Once modules are self-contained, each can be toggled or deployed independently, enabling a low-risk path toward extracting a module into a microservice when load demands it.
@@ -195,7 +199,7 @@ Remaining improvements, grouped by production-readiness dimension:
 
 ```bash
 dotnet build                                         # build solution
-dotnet test                                          # run all 194 tests
+dotnet test                                          # run all 195 tests
 dotnet test --collect:"XPlat Code Coverage"          # with coverage
 dotnet run --project src/BloggingSystem.Api          # run locally (port 5002)
 docker compose up --build                            # run in Docker (port 8080)
@@ -215,7 +219,7 @@ docker compose up --build                            # run in Docker (port 8080)
 - All new Posts infrastructure implementations must register via `PostsModuleExtensions.AddPostsModule()`; Authors via `AuthorsModuleExtensions.AddAuthorsModule()`; shared via `SharedInfrastructureExtensions.AddSharedInfrastructure()`.
 - New endpoints must chain `.WithName()`, `.WithTags("Posts")`, `.Produces<T>()` for Swagger completeness.
 - New tests must follow the existing pattern: unit tests mock ports via NSubstitute; functional tests use `BloggingApiFactory`.
-- Do not skip `dotnet test` after changes — all 194 tests must remain green.
+- Do not skip `dotnet test` after changes — all 195 tests must remain green.
 
 ### Module Encapsulation Rules (DDD / Hexagonal)
 
