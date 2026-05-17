@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using BloggingSystem.Api.Tests.Fixtures;
-using BloggingSystem.Infrastructure.Persistence.Seeding;
+using Authors.Infrastructure.Seeding;
 using FluentAssertions;
 
 namespace BloggingSystem.Api.Tests.Endpoints;
@@ -24,7 +24,7 @@ public sealed class GetPostEndpointTests : IClassFixture<BloggingApiFactory>
     {
         var body = new
         {
-            authorId = authorId ?? DataSeeder.Author1Id,
+            authorId = authorId ?? AuthorSeeder.Author1Id,
             title = "Test Post",
             description = "Description",
             content = "Content"
@@ -58,7 +58,7 @@ public sealed class GetPostEndpointTests : IClassFixture<BloggingApiFactory>
     [Fact]
     public async Task Get_WithIncludeAuthorTrue_ReturnsAuthorData()
     {
-        var id = await CreatePostAsync(DataSeeder.Author1Id);
+        var id = await CreatePostAsync(AuthorSeeder.Author1Id);
         var response = await _client.GetAsync($"/post/{id}?includeAuthor=true");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);

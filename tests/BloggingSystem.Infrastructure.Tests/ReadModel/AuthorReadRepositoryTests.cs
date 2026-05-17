@@ -1,5 +1,5 @@
-using BloggingSystem.Application.ReadModels;
-using BloggingSystem.Infrastructure.Persistence.ReadModel;
+using Authors.Application.ReadModels;
+using Authors.Infrastructure.Persistence;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,15 +7,15 @@ namespace BloggingSystem.Infrastructure.Tests.ReadModel;
 
 public sealed class AuthorReadRepositoryTests : IDisposable
 {
-    private readonly BloggingDbContext _context;
+    private readonly AuthorsDbContext _context;
     private readonly AuthorReadRepository _repo;
 
     public AuthorReadRepositoryTests()
     {
-        var options = new DbContextOptionsBuilder<BloggingDbContext>()
+        var options = new DbContextOptionsBuilder<AuthorsDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        _context = new BloggingDbContext(options);
+        _context = new AuthorsDbContext(options);
         _repo = new AuthorReadRepository(_context);
     }
 

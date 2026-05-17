@@ -1,6 +1,7 @@
-using BloggingSystem.Domain.Aggregates.Author;
-using BloggingSystem.Domain.Events;
-using BloggingSystem.Domain.Exceptions;
+using Authors.Contracts;
+using Authors.Domain.Aggregates;
+using Shared.Domain.Events;
+using Shared.Domain.Exceptions;
 using FluentAssertions;
 
 namespace BloggingSystem.Domain.Tests.Aggregates;

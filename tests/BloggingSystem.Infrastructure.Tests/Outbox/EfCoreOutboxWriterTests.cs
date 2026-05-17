@@ -1,7 +1,8 @@
-using BloggingSystem.Domain.Events;
-using BloggingSystem.Domain.ValueObjects;
-using BloggingSystem.Infrastructure.Outbox;
-using BloggingSystem.Infrastructure.Persistence.ReadModel;
+using Authors.Contracts;
+using Posts.Domain.Events;
+using Posts.Domain.ValueObjects;
+using Posts.Infrastructure.Outbox;
+using Posts.Infrastructure.Persistence;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,15 +10,15 @@ namespace BloggingSystem.Infrastructure.Tests.Outbox;
 
 public sealed class EfCoreOutboxWriterTests : IDisposable
 {
-    private readonly BloggingDbContext _context;
+    private readonly PostsDbContext _context;
     private readonly EfCoreOutboxWriter _writer;
 
     public EfCoreOutboxWriterTests()
     {
-        var options = new DbContextOptionsBuilder<BloggingDbContext>()
+        var options = new DbContextOptionsBuilder<PostsDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        _context = new BloggingDbContext(options);
+        _context = new PostsDbContext(options);
         _writer = new EfCoreOutboxWriter(_context);
     }
 
@@ -55,7 +56,6 @@ public sealed class EfCoreOutboxWriterTests : IDisposable
         var row = await _context.OutboxEvents.SingleAsync();
         row.EventType.Should().Be(
             $"{typeof(PostCreatedEvent).FullName}, {typeof(PostCreatedEvent).Assembly.GetName().Name}");
-        // Must NOT contain "Version=" — ensures restorability after assembly version bumps.
         row.EventType.Should().NotContain("Version=");
     }
 

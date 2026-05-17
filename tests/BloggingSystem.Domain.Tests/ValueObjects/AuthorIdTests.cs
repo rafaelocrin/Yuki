@@ -1,4 +1,4 @@
-using BloggingSystem.Domain.ValueObjects;
+using Authors.Contracts;
 using FluentAssertions;
 
 namespace BloggingSystem.Domain.Tests.ValueObjects;

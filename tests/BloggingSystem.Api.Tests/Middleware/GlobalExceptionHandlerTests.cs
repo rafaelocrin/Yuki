@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using BloggingSystem.Api.Tests.Fixtures;
-using BloggingSystem.Infrastructure.Persistence.Seeding;
+using Authors.Infrastructure.Seeding;
 using FluentAssertions;
 
 namespace BloggingSystem.Api.Tests.Middleware;
@@ -23,7 +23,7 @@ public sealed class GlobalExceptionHandlerTests : IClassFixture<BloggingApiFacto
     [Fact]
     public async Task ValidationException_EmptyTitle_ReturnsProblemDetails400()
     {
-        var body = new { authorId = DataSeeder.Author1Id, title = "", description = "D", content = "Body" };
+        var body = new { authorId = AuthorSeeder.Author1Id, title = "", description = "D", content = "Body" };
         var response = await _client.PostAsync("/post", Json(body));
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -37,7 +37,7 @@ public sealed class GlobalExceptionHandlerTests : IClassFixture<BloggingApiFacto
     [Fact]
     public async Task ValidationException_EmptyContent_ReturnsProblemDetails400()
     {
-        var body = new { authorId = DataSeeder.Author1Id, title = "Title", description = "D", content = "" };
+        var body = new { authorId = AuthorSeeder.Author1Id, title = "Title", description = "D", content = "" };
         var response = await _client.PostAsync("/post", Json(body));
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);

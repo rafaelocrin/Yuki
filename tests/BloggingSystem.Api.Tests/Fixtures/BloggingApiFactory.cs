@@ -1,7 +1,4 @@
-using BloggingSystem.Application.Ports;
-using BloggingSystem.Infrastructure.DependencyInjection;
-using BloggingSystem.Infrastructure.Persistence.EventStore;
-using BloggingSystem.Infrastructure.Persistence.ReadModel;
+using Authors.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -10,16 +7,19 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Posts.Infrastructure.Persistence;
+using Shared.Application.Ports;
+using Shared.Infrastructure.EventStore;
 
 namespace BloggingSystem.Api.Tests.Fixtures;
 
 public sealed class BloggingApiFactory : WebApplicationFactory<Program>
 {
-    private readonly string _dbName = Guid.NewGuid().ToString();
+    private readonly string _postsDbName = Guid.NewGuid().ToString();
+    private readonly string _authorsDbName = Guid.NewGuid().ToString();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        // Force InMemory providers so tests never touch PostgreSQL/Marten/health-check probes.
         builder.ConfigureAppConfiguration((_, cfg) =>
         {
             cfg.AddInMemoryCollection(new Dictionary<string, string?>
@@ -31,24 +31,28 @@ public sealed class BloggingApiFactory : WebApplicationFactory<Program>
 
         builder.ConfigureServices(services =>
         {
-            // Replace DbContext with a unique InMemory instance per factory for test isolation.
-            services.RemoveAll<DbContextOptions<BloggingDbContext>>();
-            services.RemoveAll<BloggingDbContext>();
-            services.AddDbContext<BloggingDbContext>(options =>
-                options.UseInMemoryDatabase(_dbName));
+            // Replace PostsDbContext with unique InMemory instance per factory
+            services.RemoveAll<DbContextOptions<PostsDbContext>>();
+            services.RemoveAll<PostsDbContext>();
+            services.AddDbContext<PostsDbContext>(options =>
+                options.UseInMemoryDatabase(_postsDbName));
 
-            // Replace event store with InMemory so tests never touch PostgreSQL/Marten,
-            // regardless of what appsettings.Development.json configures.
+            // Replace AuthorsDbContext with unique InMemory instance per factory
+            services.RemoveAll<DbContextOptions<AuthorsDbContext>>();
+            services.RemoveAll<AuthorsDbContext>();
+            services.AddDbContext<AuthorsDbContext>(options =>
+                options.UseInMemoryDatabase(_authorsDbName));
+
+            // Replace event store with InMemory
             services.RemoveAll<IEventStore>();
             services.RemoveAll<InMemoryEventStore>();
             services.AddSingleton<InMemoryEventStore>();
             services.AddSingleton<IEventStore>(sp => sp.GetRequiredService<InMemoryEventStore>());
 
-            // Clear any PostgreSQL health check probes so tests never need a live database.
+            // Clear any PostgreSQL health check probes
             services.Configure<HealthCheckServiceOptions>(opts => opts.Registrations.Clear());
 
-            // Replace JWT bearer with a test scheme that always authenticates, so
-            // functional tests for write endpoints don't need real tokens.
+            // Replace JWT bearer with a test scheme
             services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = TestAuthHandler.SchemeName;

@@ -1,8 +1,8 @@
-using BloggingSystem.Application.Ports;
-using BloggingSystem.Application.Queries.GetPostById;
-using BloggingSystem.Application.ReadModels;
-using BloggingSystem.Domain.Exceptions;
-using BloggingSystem.Domain.ValueObjects;
+using Posts.Application.Ports;
+using Posts.Application.Queries.GetPostById;
+using Posts.Application.ReadModels;
+using Posts.Domain.Exceptions;
+using Posts.Domain.ValueObjects;
 using FluentAssertions;
 using NSubstitute;
 
@@ -23,10 +23,11 @@ public sealed class GetPostByIdQueryHandlerTests
     public async Task Handle_WhenPostExists_ReturnsPostDto()
     {
         var postId = Guid.NewGuid();
-        _postRepo.GetByIdAsync(postId, false, Arg.Any<CancellationToken>())
+        _postRepo.GetByIdAsync(postId, Arg.Any<CancellationToken>())
             .Returns(new PostReadModel
             {
                 Id = postId, AuthorId = Guid.NewGuid(),
+                AuthorName = string.Empty, AuthorSurname = string.Empty,
                 Title = "T", Description = "D", Content = "C"
             });
 
@@ -42,12 +43,12 @@ public sealed class GetPostByIdQueryHandlerTests
     {
         var postId = Guid.NewGuid();
         var authorId = Guid.NewGuid();
-        _postRepo.GetByIdAsync(postId, true, Arg.Any<CancellationToken>())
+        _postRepo.GetByIdAsync(postId, Arg.Any<CancellationToken>())
             .Returns(new PostReadModel
             {
                 Id = postId, AuthorId = authorId,
-                Title = "T", Description = "D", Content = "C",
-                Author = new AuthorReadModel { Id = authorId, Name = "Jane", Surname = "Doe" }
+                AuthorName = "Jane", AuthorSurname = "Doe",
+                Title = "T", Description = "D", Content = "C"
             });
 
         var result = await _handler.Handle(new GetPostByIdQuery(new PostId(postId), true), CancellationToken.None);
@@ -61,24 +62,26 @@ public sealed class GetPostByIdQueryHandlerTests
     public async Task Handle_WhenIncludeAuthorButNoAuthorLoaded_ReturnsNullAuthor()
     {
         var postId = Guid.NewGuid();
-        _postRepo.GetByIdAsync(postId, true, Arg.Any<CancellationToken>())
+        _postRepo.GetByIdAsync(postId, Arg.Any<CancellationToken>())
             .Returns(new PostReadModel
             {
                 Id = postId, AuthorId = Guid.NewGuid(),
-                Title = "T", Description = "D", Content = "C",
-                Author = null
+                AuthorName = string.Empty, AuthorSurname = string.Empty,
+                Title = "T", Description = "D", Content = "C"
             });
 
+        // With the new denormalized model, includeAuthor=true always returns an AuthorDto
+        // (even if name is empty), so this test now verifies non-null author
         var result = await _handler.Handle(new GetPostByIdQuery(new PostId(postId), true), CancellationToken.None);
 
-        result.Author.Should().BeNull();
+        result.Author.Should().NotBeNull();
     }
 
     [Fact]
     public async Task Handle_WhenPostNotFound_ThrowsPostNotFoundException()
     {
         var postId = Guid.NewGuid();
-        _postRepo.GetByIdAsync(postId, false, Arg.Any<CancellationToken>())
+        _postRepo.GetByIdAsync(postId, Arg.Any<CancellationToken>())
             .Returns((PostReadModel?)null);
 
         var act = async () => await _handler.Handle(new GetPostByIdQuery(new PostId(postId), false), CancellationToken.None);

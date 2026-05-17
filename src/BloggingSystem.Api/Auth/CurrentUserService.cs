@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using BloggingSystem.Application.Ports;
+using Shared.Application.Ports;
 
 namespace BloggingSystem.Api.Auth;
 

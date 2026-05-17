@@ -1,11 +1,13 @@
 using System.Text.Json;
-using BloggingSystem.Application.Ports;
-using BloggingSystem.Application.Projections;
-using BloggingSystem.Application.ReadModels;
-using BloggingSystem.Domain.Events;
-using BloggingSystem.Domain.ValueObjects;
-using BloggingSystem.Infrastructure.Outbox;
-using BloggingSystem.Infrastructure.Persistence.ReadModel;
+using Authors.Contracts;
+using Posts.Application.Ports;
+using Posts.Application.Projections;
+using Posts.Application.ReadModels;
+using Posts.Domain.Events;
+using Posts.Domain.ValueObjects;
+using Posts.Infrastructure.Outbox;
+using Posts.Infrastructure.Persistence;
+using Shared.Domain.Events;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,23 +18,25 @@ namespace BloggingSystem.Infrastructure.Tests.Outbox;
 
 public sealed class OutboxProcessorTests : IDisposable
 {
-    private readonly BloggingDbContext _context;
+    private readonly PostsDbContext _context;
     private readonly IPostReadRepository _postRepo;
+    private readonly IKnownAuthorRepository _knownAuthorRepo;
     private readonly OutboxProcessor _processor;
 
     public OutboxProcessorTests()
     {
         var dbName = Guid.NewGuid().ToString();
-        var options = new DbContextOptionsBuilder<BloggingDbContext>()
+        var options = new DbContextOptionsBuilder<PostsDbContext>()
             .UseInMemoryDatabase(dbName)
             .Options;
-        _context = new BloggingDbContext(options);
+        _context = new PostsDbContext(options);
         _postRepo = Substitute.For<IPostReadRepository>();
+        _knownAuthorRepo = Substitute.For<IKnownAuthorRepository>();
 
-        // Build a scope factory that returns the pre-built context and a real projection.
         var services = new ServiceCollection();
         services.AddSingleton(_context);
         services.AddSingleton<IPostReadRepository>(_ => _postRepo);
+        services.AddSingleton<IKnownAuthorRepository>(_ => _knownAuthorRepo);
         services.AddSingleton<PostProjection>();
 
         var provider = services.BuildServiceProvider();
@@ -50,8 +54,6 @@ public sealed class OutboxProcessorTests : IDisposable
         Payload = JsonSerializer.Serialize(evt, evt.GetType(), EfCoreOutboxWriter.SerializerOptions),
         OccurredOn = evt.OccurredOn
     };
-
-    // ── ProcessPendingAsync ───────────────────────────────────────────────────
 
     [Fact]
     public async Task ProcessPendingAsync_NoPendingEntries_DoesNotCallProjection()
@@ -101,7 +103,7 @@ public sealed class OutboxProcessorTests : IDisposable
             "Title", "Desc", "Body");
 
         var entry = PendingEntry(evt);
-        entry.ProcessedAt = DateTime.UtcNow.AddMinutes(-1);  // already processed
+        entry.ProcessedAt = DateTime.UtcNow.AddMinutes(-1);
         _context.OutboxEvents.Add(entry);
         await _context.SaveChangesAsync();
 

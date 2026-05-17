@@ -1,4 +1,5 @@
-using BloggingSystem.Domain.Exceptions;
+using Posts.Domain.Exceptions;
+using Shared.Domain.Exceptions;
 using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
@@ -22,7 +23,7 @@ public sealed class GlobalExceptionHandler(IProblemDetailsService problemDetails
                     .GroupBy(e => e.PropertyName)
                     .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray())),
 
-            PostNotFoundException or AuthorNotFoundException => (
+            PostNotFoundException or KnownAuthorNotFoundException => (
                 StatusCodes.Status404NotFound,
                 "Not Found",
                 exception.Message,

@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using BloggingSystem.Api.Tests.Fixtures;
-using BloggingSystem.Infrastructure.Persistence.Seeding;
+using Authors.Infrastructure.Seeding;
 using FluentAssertions;
 
 namespace BloggingSystem.Api.Tests.Endpoints;
@@ -23,7 +23,7 @@ public sealed class CreatePostEndpointTests : IClassFixture<BloggingApiFactory>
     [Fact]
     public async Task Post_ValidRequest_Returns201Created()
     {
-        var body = new { authorId = DataSeeder.Author1Id, title = "Hello", description = "World", content = "Body" };
+        var body = new { authorId = AuthorSeeder.Author1Id, title = "Hello", description = "World", content = "Body" };
         var response = await _client.PostAsync("/post", Json(body));
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -32,7 +32,7 @@ public sealed class CreatePostEndpointTests : IClassFixture<BloggingApiFactory>
     [Fact]
     public async Task Post_ValidRequest_LocationHeaderSet()
     {
-        var body = new { authorId = DataSeeder.Author1Id, title = "Hello", description = "World", content = "Body" };
+        var body = new { authorId = AuthorSeeder.Author1Id, title = "Hello", description = "World", content = "Body" };
         var response = await _client.PostAsync("/post", Json(body));
 
         response.Headers.Location.Should().NotBeNull();
@@ -42,7 +42,7 @@ public sealed class CreatePostEndpointTests : IClassFixture<BloggingApiFactory>
     [Fact]
     public async Task Post_ValidRequest_ResponseBodyContainsId()
     {
-        var body = new { authorId = DataSeeder.Author2Id, title = "Hello", description = "World", content = "Body" };
+        var body = new { authorId = AuthorSeeder.Author2Id, title = "Hello", description = "World", content = "Body" };
         var response = await _client.PostAsync("/post", Json(body));
 
         var responseBody = await response.Content.ReadFromJsonAsync<JsonElement>();
@@ -52,7 +52,7 @@ public sealed class CreatePostEndpointTests : IClassFixture<BloggingApiFactory>
     [Fact]
     public async Task Post_EmptyTitle_Returns400()
     {
-        var body = new { authorId = DataSeeder.Author1Id, title = "", description = "World", content = "Body" };
+        var body = new { authorId = AuthorSeeder.Author1Id, title = "", description = "World", content = "Body" };
         var response = await _client.PostAsync("/post", Json(body));
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -61,7 +61,7 @@ public sealed class CreatePostEndpointTests : IClassFixture<BloggingApiFactory>
     [Fact]
     public async Task Post_EmptyContent_Returns400()
     {
-        var body = new { authorId = DataSeeder.Author1Id, title = "Title", description = "World", content = "" };
+        var body = new { authorId = AuthorSeeder.Author1Id, title = "Title", description = "World", content = "" };
         var response = await _client.PostAsync("/post", Json(body));
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);

@@ -1,6 +1,4 @@
-using BloggingSystem.Application.Ports;
-using BloggingSystem.Infrastructure.Persistence.EventStore;
-using BloggingSystem.Infrastructure.Persistence.ReadModel;
+using Authors.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +6,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Posts.Infrastructure.Persistence;
+using Shared.Application.Ports;
+using Shared.Infrastructure.EventStore;
 
 namespace BloggingSystem.Api.Tests.Fixtures;
 
@@ -17,7 +18,8 @@ namespace BloggingSystem.Api.Tests.Fixtures;
 /// </summary>
 public sealed class AnonymousBloggingApiFactory : WebApplicationFactory<Program>
 {
-    private readonly string _dbName = Guid.NewGuid().ToString();
+    private readonly string _postsDbName = Guid.NewGuid().ToString();
+    private readonly string _authorsDbName = Guid.NewGuid().ToString();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -32,10 +34,15 @@ public sealed class AnonymousBloggingApiFactory : WebApplicationFactory<Program>
 
         builder.ConfigureServices(services =>
         {
-            services.RemoveAll<DbContextOptions<BloggingDbContext>>();
-            services.RemoveAll<BloggingDbContext>();
-            services.AddDbContext<BloggingDbContext>(options =>
-                options.UseInMemoryDatabase(_dbName));
+            services.RemoveAll<DbContextOptions<PostsDbContext>>();
+            services.RemoveAll<PostsDbContext>();
+            services.AddDbContext<PostsDbContext>(options =>
+                options.UseInMemoryDatabase(_postsDbName));
+
+            services.RemoveAll<DbContextOptions<AuthorsDbContext>>();
+            services.RemoveAll<AuthorsDbContext>();
+            services.AddDbContext<AuthorsDbContext>(options =>
+                options.UseInMemoryDatabase(_authorsDbName));
 
             services.RemoveAll<IEventStore>();
             services.RemoveAll<InMemoryEventStore>();

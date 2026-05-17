@@ -1,8 +1,10 @@
-using BloggingSystem.Application.Ports;
-using BloggingSystem.Application.Projections;
-using BloggingSystem.Application.ReadModels;
-using BloggingSystem.Domain.Events;
-using BloggingSystem.Domain.ValueObjects;
+using Authors.Contracts;
+using Posts.Application.Ports;
+using Posts.Application.Projections;
+using Posts.Application.ReadModels;
+using Posts.Domain.Events;
+using Posts.Domain.ValueObjects;
+using Shared.Domain.Events;
 using FluentAssertions;
 using NSubstitute;
 
@@ -11,12 +13,14 @@ namespace BloggingSystem.Application.Tests.Projections;
 public sealed class PostProjectionTests
 {
     private readonly IPostReadRepository _postRepo;
+    private readonly IKnownAuthorRepository _knownAuthorRepo;
     private readonly PostProjection _projection;
 
     public PostProjectionTests()
     {
         _postRepo = Substitute.For<IPostReadRepository>();
-        _projection = new PostProjection(_postRepo);
+        _knownAuthorRepo = Substitute.For<IKnownAuthorRepository>();
+        _projection = new PostProjection(_postRepo, _knownAuthorRepo);
     }
 
     [Fact]

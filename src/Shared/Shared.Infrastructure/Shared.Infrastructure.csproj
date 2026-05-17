@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Shared.Infrastructure</AssemblyName>
+    <RootNamespace>Shared.Infrastructure</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shared.Application\Shared.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Marten" Version="7.*" NoWarn="NU1904" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.*" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.*" />
+    <PackageReference Include="AspNetCore.HealthChecks.Npgsql" Version="8.*" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="8.*" />
+  </ItemGroup>
+
+</Project>

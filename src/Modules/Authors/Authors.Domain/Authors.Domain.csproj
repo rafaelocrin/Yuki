@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Authors.Domain</AssemblyName>
+    <RootNamespace>Authors.Domain</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\Shared.Domain\Shared.Domain.csproj" />
+    <ProjectReference Include="..\Authors.Contracts\Authors.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

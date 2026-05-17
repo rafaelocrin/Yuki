@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using BloggingSystem.Api.Tests.Fixtures;
-using BloggingSystem.Infrastructure.Persistence.Seeding;
+using Authors.Infrastructure.Seeding;
 using FluentAssertions;
 
 namespace BloggingSystem.Api.Tests.Endpoints;
@@ -22,7 +22,7 @@ public sealed class GetPostsEndpointTests : IClassFixture<BloggingApiFactory>
 
     private async Task CreatePostAsync(string title = "Test Post")
     {
-        var body = new { authorId = DataSeeder.Author1Id, title, description = "Desc", content = "Body" };
+        var body = new { authorId = AuthorSeeder.Author1Id, title, description = "Desc", content = "Body" };
         var response = await _client.PostAsync("/post", Json(body));
         response.EnsureSuccessStatusCode();
     }

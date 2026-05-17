@@ -1,4 +1,4 @@
-using BloggingSystem.Application.Queries.GetPosts;
+using Posts.Application.Queries.GetPosts;
 using FluentAssertions;
 
 namespace BloggingSystem.Application.Tests.Validators;

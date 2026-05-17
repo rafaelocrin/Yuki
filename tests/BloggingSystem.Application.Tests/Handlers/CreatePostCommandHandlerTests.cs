@@ -1,9 +1,12 @@
-using BloggingSystem.Application.Commands.CreatePost;
-using BloggingSystem.Application.Ports;
-using BloggingSystem.Application.Projections;
-using BloggingSystem.Application.ReadModels;
-using BloggingSystem.Domain.Events;
-using BloggingSystem.Domain.Exceptions;
+using Authors.Contracts;
+using Posts.Application.Commands.CreatePost;
+using Posts.Application.Ports;
+using Posts.Application.Projections;
+using Posts.Application.ReadModels;
+using Posts.Domain.Events;
+using Posts.Domain.Exceptions;
+using Shared.Application.Ports;
+using Shared.Domain.Events;
 using FluentAssertions;
 using NSubstitute;
 
@@ -12,7 +15,7 @@ namespace BloggingSystem.Application.Tests.Handlers;
 public sealed class CreatePostCommandHandlerTests
 {
     private readonly IEventStore _eventStore;
-    private readonly IAuthorReadRepository _authorRepo;
+    private readonly IKnownAuthorRepository _knownAuthorRepo;
     private readonly IOutboxWriter _outboxWriter;
     private readonly IPostReadRepository _postRepo;
     private readonly IDateTimeProvider _dateTimeProvider;
@@ -22,21 +25,21 @@ public sealed class CreatePostCommandHandlerTests
     public CreatePostCommandHandlerTests()
     {
         _eventStore = Substitute.For<IEventStore>();
-        _authorRepo = Substitute.For<IAuthorReadRepository>();
+        _knownAuthorRepo = Substitute.For<IKnownAuthorRepository>();
         _outboxWriter = Substitute.For<IOutboxWriter>();
         _postRepo = Substitute.For<IPostReadRepository>();
         _dateTimeProvider = Substitute.For<IDateTimeProvider>();
         _dateTimeProvider.UtcNow.Returns(DateTime.UtcNow);
-        _projection = new PostProjection(_postRepo);
-        _handler = new CreatePostCommandHandler(_eventStore, _authorRepo, _outboxWriter, _projection, _dateTimeProvider);
+        _projection = new PostProjection(_postRepo, _knownAuthorRepo);
+        _handler = new CreatePostCommandHandler(_eventStore, _knownAuthorRepo, _outboxWriter, _projection, _dateTimeProvider);
     }
 
     [Fact]
     public async Task Handle_WhenAuthorExists_ReturnsNewPostId()
     {
         var authorId = Guid.NewGuid();
-        _authorRepo.GetByIdAsync(authorId, Arg.Any<CancellationToken>())
-            .Returns(new AuthorReadModel { Id = authorId, Name = "Jane", Surname = "Doe" });
+        _knownAuthorRepo.GetByIdAsync(authorId, Arg.Any<CancellationToken>())
+            .Returns(new KnownAuthorReadModel { Id = authorId, Name = "Jane", Surname = "Doe" });
 
         var command = new CreatePostCommand(authorId, "Title", "Desc", "Content");
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -48,8 +51,8 @@ public sealed class CreatePostCommandHandlerTests
     public async Task Handle_WhenAuthorExists_AppendsDomainEvents()
     {
         var authorId = Guid.NewGuid();
-        _authorRepo.GetByIdAsync(authorId, Arg.Any<CancellationToken>())
-            .Returns(new AuthorReadModel { Id = authorId, Name = "Jane", Surname = "Doe" });
+        _knownAuthorRepo.GetByIdAsync(authorId, Arg.Any<CancellationToken>())
+            .Returns(new KnownAuthorReadModel { Id = authorId, Name = "Jane", Surname = "Doe" });
 
         var command = new CreatePostCommand(authorId, "Title", "Desc", "Content");
         await _handler.Handle(command, CancellationToken.None);
@@ -64,8 +67,8 @@ public sealed class CreatePostCommandHandlerTests
     public async Task Handle_WhenAuthorExists_UpsertsThroughProjection()
     {
         var authorId = Guid.NewGuid();
-        _authorRepo.GetByIdAsync(authorId, Arg.Any<CancellationToken>())
-            .Returns(new AuthorReadModel { Id = authorId, Name = "Jane", Surname = "Doe" });
+        _knownAuthorRepo.GetByIdAsync(authorId, Arg.Any<CancellationToken>())
+            .Returns(new KnownAuthorReadModel { Id = authorId, Name = "Jane", Surname = "Doe" });
 
         var command = new CreatePostCommand(authorId, "Title", "Desc", "Content");
         await _handler.Handle(command, CancellationToken.None);
@@ -81,8 +84,8 @@ public sealed class CreatePostCommandHandlerTests
         var fixedTime = new DateTime(2026, 6, 1, 12, 0, 0, DateTimeKind.Utc);
         _dateTimeProvider.UtcNow.Returns(fixedTime);
         var authorId = Guid.NewGuid();
-        _authorRepo.GetByIdAsync(authorId, Arg.Any<CancellationToken>())
-            .Returns(new AuthorReadModel { Id = authorId, Name = "Jane", Surname = "Doe" });
+        _knownAuthorRepo.GetByIdAsync(authorId, Arg.Any<CancellationToken>())
+            .Returns(new KnownAuthorReadModel { Id = authorId, Name = "Jane", Surname = "Doe" });
 
         PostReadModel? captured = null;
         await _postRepo.UpsertAsync(Arg.Do<PostReadModel>(m => captured = m), Arg.Any<CancellationToken>());
@@ -97,21 +100,21 @@ public sealed class CreatePostCommandHandlerTests
     public async Task Handle_WhenAuthorNotFound_ThrowsAuthorNotFoundException()
     {
         var authorId = Guid.NewGuid();
-        _authorRepo.GetByIdAsync(authorId, Arg.Any<CancellationToken>())
-            .Returns((AuthorReadModel?)null);
+        _knownAuthorRepo.GetByIdAsync(authorId, Arg.Any<CancellationToken>())
+            .Returns((KnownAuthorReadModel?)null);
 
         var command = new CreatePostCommand(authorId, "Title", "Desc", "Content");
         var act = async () => await _handler.Handle(command, CancellationToken.None);
 
-        await act.Should().ThrowAsync<AuthorNotFoundException>();
+        await act.Should().ThrowAsync<KnownAuthorNotFoundException>();
     }
 
     [Fact]
     public async Task Handle_WhenAuthorNotFound_DoesNotAppendEvents()
     {
         var authorId = Guid.NewGuid();
-        _authorRepo.GetByIdAsync(authorId, Arg.Any<CancellationToken>())
-            .Returns((AuthorReadModel?)null);
+        _knownAuthorRepo.GetByIdAsync(authorId, Arg.Any<CancellationToken>())
+            .Returns((KnownAuthorReadModel?)null);
 
         var command = new CreatePostCommand(authorId, "Title", "Desc", "Content");
         try { await _handler.Handle(command, CancellationToken.None); } catch { }
@@ -124,8 +127,8 @@ public sealed class CreatePostCommandHandlerTests
     public async Task Handle_WhenAuthorExists_WritesEventsToOutbox()
     {
         var authorId = Guid.NewGuid();
-        _authorRepo.GetByIdAsync(authorId, Arg.Any<CancellationToken>())
-            .Returns(new AuthorReadModel { Id = authorId, Name = "Jane", Surname = "Doe" });
+        _knownAuthorRepo.GetByIdAsync(authorId, Arg.Any<CancellationToken>())
+            .Returns(new KnownAuthorReadModel { Id = authorId, Name = "Jane", Surname = "Doe" });
 
         var command = new CreatePostCommand(authorId, "Title", "Desc", "Content");
         await _handler.Handle(command, CancellationToken.None);
@@ -139,8 +142,8 @@ public sealed class CreatePostCommandHandlerTests
     public async Task Handle_WhenAuthorNotFound_DoesNotWriteToOutbox()
     {
         var authorId = Guid.NewGuid();
-        _authorRepo.GetByIdAsync(authorId, Arg.Any<CancellationToken>())
-            .Returns((AuthorReadModel?)null);
+        _knownAuthorRepo.GetByIdAsync(authorId, Arg.Any<CancellationToken>())
+            .Returns((KnownAuthorReadModel?)null);
 
         var command = new CreatePostCommand(authorId, "Title", "Desc", "Content");
         try { await _handler.Handle(command, CancellationToken.None); } catch { }

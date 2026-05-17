@@ -1,8 +1,8 @@
-using BloggingSystem.Application.Ports;
-using BloggingSystem.Application.Projections;
-using BloggingSystem.Application.ReadModels;
-using BloggingSystem.Domain.Events;
-using BloggingSystem.Domain.ValueObjects;
+using Authors.Application.Ports;
+using Authors.Application.Projections;
+using Authors.Application.ReadModels;
+using Authors.Contracts;
+using Shared.Domain.Events;
 using FluentAssertions;
 using NSubstitute;
 

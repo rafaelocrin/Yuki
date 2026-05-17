@@ -1,5 +1,5 @@
-using BloggingSystem.Application.ReadModels;
-using BloggingSystem.Infrastructure.Persistence.ReadModel;
+using Posts.Application.ReadModels;
+using Posts.Infrastructure.Persistence;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,15 +7,15 @@ namespace BloggingSystem.Infrastructure.Tests.ReadModel;
 
 public sealed class PostReadRepositoryTests : IDisposable
 {
-    private readonly BloggingDbContext _context;
+    private readonly PostsDbContext _context;
     private readonly PostReadRepository _repo;
 
     public PostReadRepositoryTests()
     {
-        var options = new DbContextOptionsBuilder<BloggingDbContext>()
+        var options = new DbContextOptionsBuilder<PostsDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        _context = new BloggingDbContext(options);
+        _context = new PostsDbContext(options);
         _repo = new PostReadRepository(_context);
     }
 
@@ -27,11 +27,12 @@ public sealed class PostReadRepositoryTests : IDisposable
         var post = new PostReadModel
         {
             Id = Guid.NewGuid(), AuthorId = Guid.NewGuid(),
+            AuthorName = "Jane", AuthorSurname = "Doe",
             Title = "T", Description = "D", Content = "C"
         };
 
         await _repo.UpsertAsync(post);
-        var result = await _repo.GetByIdAsync(post.Id, false);
+        var result = await _repo.GetByIdAsync(post.Id);
 
         result.Should().NotBeNull();
         result!.Title.Should().Be("T");
@@ -41,50 +42,35 @@ public sealed class PostReadRepositoryTests : IDisposable
     public async Task UpsertAsync_ExistingPost_UpdatesFields()
     {
         var id = Guid.NewGuid();
-        var post = new PostReadModel { Id = id, AuthorId = Guid.NewGuid(), Title = "Old", Description = "D", Content = "C" };
+        var post = new PostReadModel { Id = id, AuthorId = Guid.NewGuid(), AuthorName = "Jane", AuthorSurname = "Doe", Title = "Old", Description = "D", Content = "C" };
         await _repo.UpsertAsync(post);
 
-        var updated = new PostReadModel { Id = id, AuthorId = post.AuthorId, Title = "New", Description = "D", Content = "C" };
+        var updated = new PostReadModel { Id = id, AuthorId = post.AuthorId, AuthorName = "Jane", AuthorSurname = "Doe", Title = "New", Description = "D", Content = "C" };
         await _repo.UpsertAsync(updated);
 
-        var result = await _repo.GetByIdAsync(id, false);
+        var result = await _repo.GetByIdAsync(id);
         result!.Title.Should().Be("New");
     }
 
     [Fact]
-    public async Task GetByIdAsync_WithIncludeAuthor_ReturnsAuthorNavigation()
+    public async Task GetByIdAsync_ReturnsDenormalizedAuthorData()
     {
         var authorId = Guid.NewGuid();
-        _context.Authors.Add(new AuthorReadModel { Id = authorId, Name = "Jane", Surname = "Doe" });
-        var post = new PostReadModel { Id = Guid.NewGuid(), AuthorId = authorId, Title = "T", Description = "D", Content = "C" };
+        var post = new PostReadModel { Id = Guid.NewGuid(), AuthorId = authorId, AuthorName = "Jane", AuthorSurname = "Doe", Title = "T", Description = "D", Content = "C" };
         _context.Posts.Add(post);
         await _context.SaveChangesAsync();
 
-        var result = await _repo.GetByIdAsync(post.Id, includeAuthor: true);
-
-        result!.Author.Should().NotBeNull();
-        result.Author!.Name.Should().Be("Jane");
-    }
-
-    [Fact]
-    public async Task GetByIdAsync_WithoutIncludeAuthor_DoesNotLoadAuthor()
-    {
-        var authorId = Guid.NewGuid();
-        _context.Authors.Add(new AuthorReadModel { Id = authorId, Name = "Jane", Surname = "Doe" });
-        var post = new PostReadModel { Id = Guid.NewGuid(), AuthorId = authorId, Title = "T", Description = "D", Content = "C" };
-        _context.Posts.Add(post);
-        await _context.SaveChangesAsync();
-
-        var result = await _repo.GetByIdAsync(post.Id, includeAuthor: false);
+        var result = await _repo.GetByIdAsync(post.Id);
 
         result.Should().NotBeNull();
-        result!.Author.Should().BeNull();
+        result!.AuthorName.Should().Be("Jane");
+        result.AuthorSurname.Should().Be("Doe");
     }
 
     [Fact]
     public async Task GetByIdAsync_UnknownId_ReturnsNull()
     {
-        var result = await _repo.GetByIdAsync(Guid.NewGuid(), false);
+        var result = await _repo.GetByIdAsync(Guid.NewGuid());
         result.Should().BeNull();
     }
 
@@ -92,7 +78,7 @@ public sealed class PostReadRepositoryTests : IDisposable
     public async Task UpsertAsync_SameEventTwice_DoesNotCreateDuplicate()
     {
         var id = Guid.NewGuid();
-        var post = new PostReadModel { Id = id, AuthorId = Guid.NewGuid(), Title = "T", Description = "D", Content = "C" };
+        var post = new PostReadModel { Id = id, AuthorId = Guid.NewGuid(), AuthorName = "Jane", AuthorSurname = "Doe", Title = "T", Description = "D", Content = "C" };
 
         await _repo.UpsertAsync(post);
         await _repo.UpsertAsync(post);

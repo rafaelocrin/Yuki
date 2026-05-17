@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Posts.Domain</AssemblyName>
+    <RootNamespace>Posts.Domain</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\Shared.Domain\Shared.Domain.csproj" />
+    <ProjectReference Include="..\..\..\Modules\Authors\Authors.Contracts\Authors.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

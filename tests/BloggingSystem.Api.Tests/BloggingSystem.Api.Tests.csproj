@@ -25,9 +25,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\BloggingSystem.Api\BloggingSystem.Api.csproj" />
-    <ProjectReference Include="..\..\src\BloggingSystem.Application\BloggingSystem.Application.csproj" />
-    <ProjectReference Include="..\..\src\BloggingSystem.Infrastructure\BloggingSystem.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\src\BloggingSystem.Domain\BloggingSystem.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Posts\Posts.Application\Posts.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Posts\Posts.Infrastructure\Posts.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Authors\Authors.Infrastructure\Authors.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Shared\Shared.Application\Shared.Application.csproj" />
+    <ProjectReference Include="..\..\src\Shared\Shared.Infrastructure\Shared.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

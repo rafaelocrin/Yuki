@@ -1,12 +1,9 @@
 using System.Text;
+using Authors.Application.Commands.CreateAuthor;
+using Authors.Infrastructure.DependencyInjection;
 using BloggingSystem.Api.Auth;
 using BloggingSystem.Api.Endpoints;
 using BloggingSystem.Api.Middleware;
-using BloggingSystem.Application.Behaviors;
-using BloggingSystem.Application.Commands.CreatePost;
-using BloggingSystem.Application.Ports;
-using BloggingSystem.Application.Projections;
-using BloggingSystem.Infrastructure.DependencyInjection;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -14,7 +11,12 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Posts.Application.Commands.CreatePost;
+using Posts.Infrastructure.DependencyInjection;
 using Serilog;
+using Shared.Application.Behaviors;
+using Shared.Application.Ports;
+using Shared.Infrastructure.DependencyInjection;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -71,15 +73,27 @@ builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 // ── Application ───────────────────────────────────────────────────────────────
 
 builder.Services.AddMediatR(cfg =>
-    cfg.RegisterServicesFromAssembly(typeof(CreatePostCommand).Assembly));
+{
+    cfg.RegisterServicesFromAssemblies(
+        typeof(CreatePostCommand).Assembly,    // Posts.Application
+        typeof(CreateAuthorCommand).Assembly   // Authors.Application
+    );
+});
 
-builder.Services.AddValidatorsFromAssembly(typeof(CreatePostCommand).Assembly);
+builder.Services.AddValidatorsFromAssemblies(new[]
+{
+    typeof(CreatePostCommand).Assembly,
+    typeof(CreateAuthorCommand).Assembly
+}, includeInternalTypes: true);
+
 builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
 builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
-builder.Services.AddScoped<PostProjection>();
-builder.Services.AddScoped<AuthorProjection>();
-builder.Services.AddInfrastructure(builder.Configuration);
+// ── Infrastructure / Modules ──────────────────────────────────────────────────
+
+builder.Services.AddSharedInfrastructure(builder.Configuration);
+builder.Services.AddPostsModule(builder.Configuration);
+builder.Services.AddAuthorsModule(builder.Configuration);
 
 // ── API infrastructure ────────────────────────────────────────────────────────
 

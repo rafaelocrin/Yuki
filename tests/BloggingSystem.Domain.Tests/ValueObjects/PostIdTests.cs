@@ -1,4 +1,4 @@
-using BloggingSystem.Domain.ValueObjects;
+using Posts.Domain.ValueObjects;
 using FluentAssertions;
 
 namespace BloggingSystem.Domain.Tests.ValueObjects;

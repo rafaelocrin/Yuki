@@ -1,4 +1,4 @@
-using BloggingSystem.Infrastructure.Serialization;
+using Shared.Infrastructure.Serialization;
 using FluentAssertions;
 
 namespace BloggingSystem.Infrastructure.Tests.Serialization;

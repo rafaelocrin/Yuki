@@ -1,8 +1,8 @@
 using BloggingSystem.Api.Extensions;
 using BloggingSystem.Api.Models;
 using BloggingSystem.Api.Results;
-using BloggingSystem.Application.Commands.CreatePost;
-using BloggingSystem.Application.DTOs;
+using Posts.Application.Commands.CreatePost;
+using Posts.Application.DTOs;
 using MediatR;
 
 namespace BloggingSystem.Api.Endpoints;

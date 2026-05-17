@@ -1,12 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
-    <ProjectReference Include="..\BloggingSystem.Application\BloggingSystem.Application.csproj" />
-    <ProjectReference Include="..\BloggingSystem.Infrastructure\BloggingSystem.Infrastructure.csproj" />
+    <ProjectReference Include="..\Shared\Shared.Application\Shared.Application.csproj" />
+    <ProjectReference Include="..\Shared\Shared.Infrastructure\Shared.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Posts\Posts.Application\Posts.Application.csproj" />
+    <ProjectReference Include="..\Modules\Posts\Posts.Infrastructure\Posts.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Authors\Authors.Application\Authors.Application.csproj" />
+    <ProjectReference Include="..\Modules\Authors\Authors.Infrastructure\Authors.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="FluentValidation" Version="12.1.1" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.*" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.15">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>

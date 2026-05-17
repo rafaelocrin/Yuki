@@ -1,6 +1,6 @@
-using BloggingSystem.Application.Ports;
-using BloggingSystem.Application.Queries.GetPosts;
-using BloggingSystem.Application.ReadModels;
+using Posts.Application.Ports;
+using Posts.Application.Queries.GetPosts;
+using Posts.Application.ReadModels;
 using FluentAssertions;
 using NSubstitute;
 
@@ -20,6 +20,7 @@ public sealed class GetPostsQueryHandlerTests
     private static PostReadModel MakePost(string title = "T") => new()
     {
         Id = Guid.NewGuid(), AuthorId = Guid.NewGuid(),
+        AuthorName = "Jane", AuthorSurname = "Doe",
         Title = title, Description = "D", Content = "C",
         CreatedAt = DateTime.UtcNow
     };
@@ -28,7 +29,7 @@ public sealed class GetPostsQueryHandlerTests
     public async Task Handle_ReturnsMappedDtos()
     {
         var posts = new List<PostReadModel> { MakePost("A"), MakePost("B") };
-        _postRepo.GetPagedAsync(1, 10, false, Arg.Any<CancellationToken>())
+        _postRepo.GetPagedAsync(1, 10, Arg.Any<CancellationToken>())
             .Returns((posts, 2));
 
         var result = await _handler.Handle(new GetPostsQuery(1, 10, false), CancellationToken.None);
@@ -45,8 +46,9 @@ public sealed class GetPostsQueryHandlerTests
     {
         var authorId = Guid.NewGuid();
         var post = MakePost();
-        post.Author = new AuthorReadModel { Id = authorId, Name = "Jane", Surname = "Doe" };
-        _postRepo.GetPagedAsync(1, 10, true, Arg.Any<CancellationToken>())
+        post.AuthorName = "Jane";
+        post.AuthorSurname = "Doe";
+        _postRepo.GetPagedAsync(1, 10, Arg.Any<CancellationToken>())
             .Returns((new List<PostReadModel> { post }, 1));
 
         var result = await _handler.Handle(new GetPostsQuery(1, 10, true), CancellationToken.None);
@@ -59,8 +61,7 @@ public sealed class GetPostsQueryHandlerTests
     public async Task Handle_WithoutIncludeAuthor_NullAuthorDto()
     {
         var post = MakePost();
-        post.Author = new AuthorReadModel { Id = Guid.NewGuid(), Name = "Jane", Surname = "Doe" };
-        _postRepo.GetPagedAsync(1, 10, false, Arg.Any<CancellationToken>())
+        _postRepo.GetPagedAsync(1, 10, Arg.Any<CancellationToken>())
             .Returns((new List<PostReadModel> { post }, 1));
 
         var result = await _handler.Handle(new GetPostsQuery(1, 10, false), CancellationToken.None);
@@ -71,7 +72,7 @@ public sealed class GetPostsQueryHandlerTests
     [Fact]
     public async Task Handle_EmptyPage_ReturnsEmptyItems()
     {
-        _postRepo.GetPagedAsync(5, 10, false, Arg.Any<CancellationToken>())
+        _postRepo.GetPagedAsync(5, 10, Arg.Any<CancellationToken>())
             .Returns((new List<PostReadModel>(), 0));
 
         var result = await _handler.Handle(new GetPostsQuery(5, 10, false), CancellationToken.None);
@@ -84,7 +85,7 @@ public sealed class GetPostsQueryHandlerTests
     [Fact]
     public async Task Handle_TotalPages_CalculatedCorrectly()
     {
-        _postRepo.GetPagedAsync(1, 3, false, Arg.Any<CancellationToken>())
+        _postRepo.GetPagedAsync(1, 3, Arg.Any<CancellationToken>())
             .Returns((new List<PostReadModel> { MakePost(), MakePost(), MakePost() }, 7));
 
         var result = await _handler.Handle(new GetPostsQuery(1, 3, false), CancellationToken.None);

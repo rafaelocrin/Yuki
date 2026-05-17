@@ -1,5 +1,6 @@
-using BloggingSystem.Domain.Events;
-using BloggingSystem.Infrastructure.Persistence.EventStore;
+using Posts.Domain.Events;
+using Shared.Domain.Events;
+using Shared.Infrastructure.EventStore;
 using FluentAssertions;
 using NSubstitute;
 

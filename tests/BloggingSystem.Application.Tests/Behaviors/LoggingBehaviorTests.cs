@@ -1,4 +1,4 @@
-using BloggingSystem.Application.Behaviors;
+using Shared.Application.Behaviors;
 using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -15,7 +15,7 @@ public sealed class LoggingBehaviorTests
     public async Task Handle_CallsNextAndReturnsResult()
     {
         var behavior = new LoggingBehavior<TestRequest, string>(_logger);
-        RequestHandlerDelegate<string> next = () => Task.FromResult("result");
+        RequestHandlerDelegate<string> next = _ => Task.FromResult("result");
 
         var result = await behavior.Handle(new TestRequest("x"), next, CancellationToken.None);
 
@@ -26,7 +26,7 @@ public sealed class LoggingBehaviorTests
     public async Task Handle_WhenNextThrows_RethrowsException()
     {
         var behavior = new LoggingBehavior<TestRequest, string>(_logger);
-        RequestHandlerDelegate<string> next = () => throw new InvalidOperationException("boom");
+        RequestHandlerDelegate<string> next = _ => throw new InvalidOperationException("boom");
 
         var act = async () => await behavior.Handle(new TestRequest("x"), next, CancellationToken.None);
 

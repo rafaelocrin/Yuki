@@ -1,7 +1,8 @@
 using BloggingSystem.Api.Models;
 using BloggingSystem.Api.Results;
-using BloggingSystem.Application.DTOs;
-using BloggingSystem.Application.Queries.GetPosts;
+using Posts.Application.DTOs;
+using Posts.Application.Queries.GetPosts;
+using Shared.Application.DTOs;
 using MediatR;
 
 namespace BloggingSystem.Api.Endpoints;

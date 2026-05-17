@@ -1,8 +1,10 @@
-using BloggingSystem.Application.Commands.CreateAuthor;
-using BloggingSystem.Application.Ports;
-using BloggingSystem.Application.Projections;
-using BloggingSystem.Domain.Events;
+using Authors.Application.Commands.CreateAuthor;
+using Authors.Application.Ports;
+using Authors.Application.Projections;
+using Shared.Application.Ports;
+using Shared.Domain.Events;
 using FluentAssertions;
+using MediatR;
 using NSubstitute;
 
 namespace BloggingSystem.Application.Tests.Handlers;
@@ -12,6 +14,7 @@ public sealed class CreateAuthorCommandHandlerTests
     private readonly IEventStore _eventStore;
     private readonly IAuthorReadRepository _authorRepo;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IPublisher _publisher;
     private readonly AuthorProjection _projection;
     private readonly CreateAuthorCommandHandler _handler;
 
@@ -20,9 +23,10 @@ public sealed class CreateAuthorCommandHandlerTests
         _eventStore = Substitute.For<IEventStore>();
         _authorRepo = Substitute.For<IAuthorReadRepository>();
         _dateTimeProvider = Substitute.For<IDateTimeProvider>();
+        _publisher = Substitute.For<IPublisher>();
         _dateTimeProvider.UtcNow.Returns(DateTime.UtcNow);
         _projection = new AuthorProjection(_authorRepo);
-        _handler = new CreateAuthorCommandHandler(_eventStore, _projection, _dateTimeProvider);
+        _handler = new CreateAuthorCommandHandler(_eventStore, _projection, _dateTimeProvider, _publisher);
     }
 
     [Fact]
@@ -53,7 +57,7 @@ public sealed class CreateAuthorCommandHandlerTests
         await _handler.Handle(command, CancellationToken.None);
 
         await _authorRepo.Received(1).UpsertAsync(
-            Arg.Any<Application.ReadModels.AuthorReadModel>(),
+            Arg.Any<Authors.Application.ReadModels.AuthorReadModel>(),
             Arg.Any<CancellationToken>());
     }
 

@@ -1,10 +1,14 @@
-using BloggingSystem.Domain.Aggregates.Post;
-using BloggingSystem.Domain.Events;
-using BloggingSystem.Domain.Exceptions;
-using BloggingSystem.Domain.ValueObjects;
+using Authors.Contracts;
+using Posts.Domain.Aggregates;
+using Posts.Domain.Events;
+using Posts.Domain.Exceptions;
+using Posts.Domain.ValueObjects;
+using Shared.Domain.Events;
+using Shared.Domain.Exceptions;
 using FluentAssertions;
 
 namespace BloggingSystem.Domain.Tests.Aggregates;
+#pragma warning disable CS8073 // intentional null checks in tests
 
 public sealed class PostAggregateTests
 {

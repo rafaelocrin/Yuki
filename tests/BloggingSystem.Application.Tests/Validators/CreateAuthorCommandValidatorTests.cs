@@ -1,4 +1,4 @@
-using BloggingSystem.Application.Commands.CreateAuthor;
+using Authors.Application.Commands.CreateAuthor;
 using FluentAssertions;
 
 namespace BloggingSystem.Application.Tests.Validators;

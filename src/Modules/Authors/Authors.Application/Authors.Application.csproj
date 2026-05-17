@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Authors.Application</AssemblyName>
+    <RootNamespace>Authors.Application</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Authors.Domain\Authors.Domain.csproj" />
+    <ProjectReference Include="..\Authors.Contracts\Authors.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Shared.Application\Shared.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Authors.Infrastructure" />
+    <InternalsVisibleTo Include="BloggingSystem.Application.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="12.1.1" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+    <PackageReference Include="MediatR" Version="12.*" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.*" />
+  </ItemGroup>
+
+</Project>

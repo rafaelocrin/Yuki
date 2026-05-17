@@ -1,4 +1,4 @@
-using BloggingSystem.Application.Behaviors;
+using Shared.Application.Behaviors;
 using FluentAssertions;
 using FluentValidation;
 using MediatR;
@@ -20,7 +20,7 @@ public sealed class RequiredValueValidator : AbstractValidator<TestRequest>
 public sealed class ValidationBehaviorTests
 {
     private static RequestHandlerDelegate<string> NextReturning(string value) =>
-        () => Task.FromResult(value);
+        _ => Task.FromResult(value);
 
     [Fact]
     public async Task Handle_WhenNoValidatorsRegistered_CallsNext()
@@ -52,7 +52,7 @@ public sealed class ValidationBehaviorTests
     public async Task Handle_WhenValidatorFails_DoesNotCallNext()
     {
         var nextCalled = false;
-        RequestHandlerDelegate<string> next = () => { nextCalled = true; return Task.FromResult("ok"); };
+        RequestHandlerDelegate<string> next = _ => { nextCalled = true; return Task.FromResult("ok"); };
 
         var behavior = new ValidationBehavior<TestRequest, string>([new RequiredValueValidator()]);
         try { await behavior.Handle(new TestRequest(""), next, CancellationToken.None); } catch { }
