@@ -31,7 +31,7 @@ The current `Posts` and `Authors` concerns share a `BloggingDbContext`, share `I
 
 ### Tier 3 — Important but can follow
 
-**6. Idempotent command handling** — Only matters once you have real clients retrying on failure (which Tier 1–2 will expose).
+~~**6. Idempotent command handling**~~ ✅ `X-Idempotency-Key` header + `ProcessedCommands` table + `IdempotencyBehavior<,>` MediatR pipeline. `POST /post` and `POST /author` are safe to retry without duplicate data.
 
 **7. Secret management** — Urgent only when the repository is shared outside the team or deployed to a shared environment.
 
@@ -46,7 +46,7 @@ The current `Posts` and `Authors` concerns share a `BloggingDbContext`, share `I
 | 1 | Health checks + Structured logging | 1 day | ✅ Done |
 | 2 | Auth (JWT bearer) | 2–3 days | ✅ Done |
 | 3 | Outbox pattern | 1–2 days | ✅ Done |
-| 4 | Retry / circuit-breaker | half a day | Pending |
+| 4 | Retry / circuit-breaker | half a day | ✅ Done |
 | 5 | Modular monolith | 2–3 days | ✅ Done |
 
 The first three together turn this from a well-engineered prototype into something that can run in production under scrutiny.
@@ -65,15 +65,15 @@ The first three together turn this from a well-engineered prototype into somethi
 ### Observability
 
 5. ~~**Structured logging**~~ ✅ Serilog structured logging with `CorrelationId` enrichment via `X-Correlation-ID` header and `LoggingBehavior` MediatR pipeline. Config-driven minimum levels.
-6. **Distributed tracing** — Wire `OpenTelemetry.Extensions.Hosting` with OTLP exporter so spans are visible in Jaeger/Tempo; instrument MediatR pipeline and EF Core queries.
+6. ~~**Distributed tracing**~~ ✅ `OpenTelemetry.Extensions.Hosting` with OTLP exporter wired in all 3 API hosts. Spans visible in Jaeger at `localhost:16686`; conditional on `OpenTelemetry:OtlpEndpoint` config.
 7. ~~**Health checks**~~ ✅ `/healthz/live` (liveness, no checks) and `/healthz/ready` (readiness, PostgreSQL probe tagged "ready") exposed with JSON response writer.
 8. **Metrics** — Expose Prometheus-compatible metrics (`/metrics`) via `prometheus-net.AspNetCore`; track request latency, command throughput, and projection lag.
 9. **OpenAPI XML comments** — Enable `<GenerateDocumentationFile>true</GenerateDocumentationFile>` in the API project and wire XML docs into `AddSwaggerGen` for richer Swagger descriptions.
 
 ### Resilience
 
-10. **Retry / circuit-breaker** — Wrap PostgreSQL calls (EF Core + Marten) with Polly retry and circuit-breaker policies to handle transient failures.
-11. **Idempotent command handling** — Add an `IdempotencyKey` header; store processed command IDs to make `POST /post` and `POST /author` safe to retry without duplicate data.
+10. ~~**Retry / circuit-breaker**~~ ✅ `EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: 10s)` applied to both `PostsDbContext` and `AuthorsDbContext` via Npgsql's built-in Polly integration.
+11. ~~**Idempotent command handling**~~ ✅ `X-Idempotency-Key` header; `ProcessedCommands` table; `IdempotencyBehavior<,>` MediatR pipeline enforces once-only execution for `POST /post` and `POST /author`.
 12. ~~**Outbox pattern**~~ ✅ `OutboxEvent` table + `EfCoreOutboxWriter` + `OutboxProcessor` (BackgroundService). Events written to outbox before inline projection; on restart the processor re-projects any pending entries, closing the crash-between-append-and-project window.
 
 ### Scalability & Performance
@@ -85,7 +85,7 @@ The first three together turn this from a well-engineered prototype into somethi
 
 ### Availability
 
-17. **Graceful shutdown** — Configure `hostOptions.ShutdownTimeout` and honour `CancellationToken` in all hosted services so rolling deploys drain cleanly.
+17. ~~**Graceful shutdown**~~ ✅ `hostOptions.ShutdownTimeout = 30s` configured in all 3 API hosts (`BloggingSystem.Api`, `Posts.Api`, `Authors.Api`); all hosted services honour `CancellationToken`.
 18. **Database migrations as init container** — Move `DatabaseMigrator` out of the API startup path into a Kubernetes init container or separate migration job to avoid blocking pod startup.
 
 ### Architecture Evolution — Standard Monolith → Modular Monolith
@@ -116,7 +116,7 @@ src/
 
 19. ~~**Define module public contracts**~~ ✅ 10-project modular structure in place. `Posts.*` and `Authors.*` are separate assemblies; cross-module code does not compile.
 20. ~~**Schema isolation**~~ ✅ `PostsDbContext` owns schema `posts`; `AuthorsDbContext` owns schema `authors`. Shared `BloggingDbContext` removed.
-21. ~~**In-process integration events**~~ ✅ `OnAuthorCreated` handler (INotificationHandler) in Posts module populates local `KnownAuthors` table from `AuthorCreatedEvent` published by Authors module.
+21. ~~**In-process → message broker integration events**~~ ✅ `AuthorCreatedEvent` published via MassTransit (`IIntegrationEventPublisher` port). `AuthorCreatedConsumer` (MassTransit `IConsumer<AuthorCreatedEvent>`) in `Posts.Infrastructure` populates local `KnownAuthors` table. Transport switches between `inmemory` (tests/default) and `rabbitmq` (docker-compose/production) via config.
 22. ~~**Per-module DI registration**~~ ✅ `AddPostsModule()`, `AddAuthorsModule()`, `AddSharedInfrastructure()` replace the old single `AddInfrastructure()`.
 23. ~~**Per-module Architecture tests**~~ ✅ 23 assembly-level assertions in `LayerDependencyTests` verify no cross-module project references (includes `Authors.Contracts` boundary test).
 24. **Feature flags per module** — Once modules are self-contained, each can be toggled or deployed independently, enabling a low-risk path toward extracting a module into a microservice when load demands it.

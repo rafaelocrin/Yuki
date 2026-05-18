@@ -484,7 +484,7 @@ Each API host exposes:
 
 ## Microservices Migration
 
-See [MICROSERVICES_MIGRATION.md](MICROSERVICES_MIGRATION.md) for the full step-by-step roadmap from modular monolith to independently deployable services. Current status:
+See [MICROSERVICES_MIGRATION.md](docs/MICROSERVICES_MIGRATION.md) for the full step-by-step roadmap from modular monolith to independently deployable services. Current status:
 
 | Step | Status |
 |---|---|
